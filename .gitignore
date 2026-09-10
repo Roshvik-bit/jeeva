@@ -11,11 +11,12 @@ dist-ssr
 .vite
 .vercel
 
-# Environment files
+# Environment files and secrets
 .env
-.env.local
-.env.production.local
-.env.development.local
+.env*
+.env.*
+.env*.local
+!.env.example
 
 # Editor directories
 .vscode/*
