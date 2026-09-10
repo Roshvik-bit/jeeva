@@ -18,6 +18,9 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
 
   // Helper to get tile layer options based on OpenStreetMap style
   const getTileConfig = (style) => {
+    const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+    const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
+
     if (style === "satellite") {
       return {
         url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -44,11 +47,34 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
       };
     }
 
-    // Default: Tactical Dark (CartoDB Dark Matter powered by OpenStreetMap data)
+    // Default: Tactical Dark
+    // 1. Optional Mapbox dark style if key is provided
+    if (mapboxToken && mapboxToken.startsWith("pk.")) {
+      return {
+        url: `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`,
+        attribution: '&copy; <a href="https://www.mapbox.com/">Mapbox</a> &copy; OpenStreetMap',
+        tileSize: 512,
+        zoomOffset: -1,
+        maxZoom: 19
+      };
+    }
+
+    // 2. Optional CARTO with valid API key
+    if (cartoKey) {
+      return {
+        url: `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?api_key=${cartoKey}`,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
+        subdomains: "abcd",
+        maxZoom: 19
+      };
+    }
+
+    // 3. 100% Free OpenStreetMap with high-contrast tactical dark filter (NO API KEY REQUIRED, NO WATERMARKS)
     return {
-      url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: "abcd",
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      subdomains: "abc",
+      className: "map-tiles-tactical-dark",
       maxZoom: 19
     };
   };
@@ -68,6 +94,7 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
       subdomains: config.subdomains || "abc",
       tileSize: config.tileSize || 256,
       zoomOffset: config.zoomOffset || 0,
+      className: config.className || "",
       maxZoom: config.maxZoom || 19
     });
 
@@ -101,9 +128,10 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
     const config = getTileConfig(mapStyle);
     const initialTiles = L.tileLayer(config.url, {
       attribution: config.attribution,
-      subdomains: config.subdomains || "abcd",
+      subdomains: config.subdomains || "abc",
       tileSize: config.tileSize || 256,
       zoomOffset: config.zoomOffset || 0,
+      className: config.className || "",
       maxZoom: config.maxZoom || 19
     }).addTo(map);
 

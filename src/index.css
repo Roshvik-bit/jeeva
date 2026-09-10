@@ -86,3 +86,9 @@
   background-color: #1e293b !important;
   color: #ffffff !important;
 }
+
+/* Tactical Dark Mode for OpenStreetMap Tiles - 100% Free, NO API Key Required */
+.map-tiles-tactical-dark,
+.map-tiles-tactical-dark .leaflet-tile {
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%) saturate(75%) !important;
+}
