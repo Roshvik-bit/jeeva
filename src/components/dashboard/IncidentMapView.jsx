@@ -16,20 +16,26 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
   const [mapStyle, setMapStyle] = useState("dark"); // "dark" | "satellite" | "streets"
   const tileLayerRef = useRef(null);
 
-  // Helper to get tile layer options based on style and tokens
+  // Helper to get tile layer options based on OpenStreetMap style
   const getTileConfig = (style) => {
-    const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-    const isMapboxValid = mapboxToken && mapboxToken.startsWith("pk.");
-
     if (style === "satellite") {
       return {
         url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        attribution: "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+        attribution: "Tiles &copy; Esri &mdash; Source: Esri, USGS, Maxar",
         maxZoom: 19
       };
     }
 
-    if (style === "streets") {
+    if (style === "hot") {
+      return {
+        url: "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles: <a href="https://www.hotosm.org/">Humanitarian OSM</a>',
+        subdomains: "abc",
+        maxZoom: 19
+      };
+    }
+
+    if (style === "osm" || style === "streets") {
       return {
         url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -38,17 +44,7 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
       };
     }
 
-    // Default: Tactical Dark
-    if (isMapboxValid) {
-      return {
-        url: `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`,
-        attribution: '&copy; <a href="https://www.mapbox.com/">Mapbox</a> &copy; OpenStreetMap',
-        tileSize: 512,
-        zoomOffset: -1,
-        maxZoom: 19
-      };
-    }
-
+    // Default: Tactical Dark (CartoDB Dark Matter powered by OpenStreetMap data)
     return {
       url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -75,29 +71,34 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
       maxZoom: config.maxZoom || 19
     });
 
-    // Fallback on tile error to ensure map never breaks
+    // Fallback on tile error to standard OpenStreetMap
     newTileLayer.on("tileerror", () => {
-      console.warn("Custom tile layer error, falling back to CartoDB Dark Matter");
+      console.warn("Tile layer error, falling back to standard OpenStreetMap");
     });
 
     newTileLayer.addTo(map);
     tileLayerRef.current = newTileLayer;
   }, [mapStyle]);
 
-  // Initialize Leaflet Map
+  // Initialize Leaflet Map with container lifecycle management & resize observers
   useEffect(() => {
-    if (!mapContainerRef.current) return;
-    if (mapInstanceRef.current) return;
+    const container = mapContainerRef.current;
+    if (!container) return;
+
+    // Reset container leaflet ID to prevent React StrictMode remount crashes
+    if (container._leaflet_id) {
+      container._leaflet_id = null;
+    }
 
     // Initial center on disaster operations area
-    const map = L.map(mapContainerRef.current, {
+    const map = L.map(container, {
       center: [13.075, 80.265],
       zoom: 13,
       zoomControl: false
     });
 
-    // Initial tile layer
-    const config = getTileConfig("dark");
+    // Initial tile layer (Tactical Dark OSM)
+    const config = getTileConfig(mapStyle);
     const initialTiles = L.tileLayer(config.url, {
       attribution: config.attribution,
       subdomains: config.subdomains || "abcd",
@@ -121,9 +122,26 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
     unitsLayerRef.current = units;
     mapInstanceRef.current = map;
 
+    // Invalidate size on mount to eliminate gray boxes from layout delays
+    const timer1 = setTimeout(() => map.invalidateSize(), 150);
+    const timer2 = setTimeout(() => map.invalidateSize(), 500);
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    });
+    resizeObserver.observe(container);
+
     return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
+      if (container) {
+        container._leaflet_id = null;
+      }
     };
   }, []);
 
@@ -371,9 +389,33 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
                 ? "bg-slate-800 text-white shadow-sm"
                 : "text-slate-400 hover:text-white"
             }`}
-            title="Tactical Dark Map"
+            title="Tactical Dark OpenStreetMap"
           >
             🌑 Tactical
+          </button>
+
+          <button
+            onClick={() => setMapStyle("osm")}
+            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+              mapStyle === "osm" || mapStyle === "streets"
+                ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/30"
+                : "text-slate-400 hover:text-white"
+            }`}
+            title="Standard OpenStreetMap (100% Free & Open Source)"
+          >
+            🗺️ OpenStreetMap
+          </button>
+
+          <button
+            onClick={() => setMapStyle("hot")}
+            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+              mapStyle === "hot"
+                ? "bg-amber-600 text-white shadow-sm shadow-amber-600/30"
+                : "text-slate-400 hover:text-white"
+            }`}
+            title="Humanitarian OpenStreetMap Team (Disaster Response Layer)"
+          >
+            🚑 Humanitarian
           </button>
 
           <button
@@ -386,18 +428,6 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
             title="High-Resolution Satellite Aerial View"
           >
             🛰️ Satellite
-          </button>
-
-          <button
-            onClick={() => setMapStyle("streets")}
-            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapStyle === "streets"
-                ? "bg-slate-800 text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
-            }`}
-            title="Street Map"
-          >
-            🗺️ Streets
           </button>
         </div>
 

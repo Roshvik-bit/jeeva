@@ -91,5 +91,35 @@ export const geoService = {
     }
 
     return `Coordinates: ${lat.toFixed(4)}° N, ${lng.toFixed(4)}° E (Disaster Grid Zone Alpha)`;
+  },
+
+  /**
+   * Reverse geocodes coordinates to a human-readable address using OpenStreetMap Nominatim
+   * Falls back smoothly to local landmark presets if offline or network drops
+   */
+  reverseGeocodeOSM: async (lat, lng) => {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3500);
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+        {
+          headers: { "Accept-Language": "en" },
+          signal: controller.signal
+        }
+      );
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.display_name) {
+          // Truncate overly long address string for cleaner mobile display
+          const parts = data.display_name.split(",");
+          return parts.slice(0, 3).join(",").trim();
+        }
+      }
+    } catch (err) {
+      // Offline fallback
+    }
+    return geoService.getReadableAddress(lat, lng);
   }
 };

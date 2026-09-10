@@ -1,16 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import L from "leaflet";
 import { geoService, LANDMARK_PRESETS } from "../../services/geoService";
-import { MapPin, Navigation, Compass, CheckCircle2 } from "lucide-react";
+import { MapPin, Navigation, Compass, CheckCircle2, Map as MapIcon, ChevronDown, ChevronUp } from "lucide-react";
 
 export const LocationPicker = ({ location, setLocation }) => {
   const [isLocating, setIsLocating] = useState(false);
   const [showPresets, setShowPresets] = useState(false);
+  const [showMap, setShowMap] = useState(true);
+
+  const mapContainerRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markerRef = useRef(null);
 
   const handleAutoDetect = async () => {
     setIsLocating(true);
     try {
       const coords = await geoService.getCurrentCoordinates();
-      const address = geoService.getReadableAddress(coords.lat, coords.lng);
+      const address = await geoService.reverseGeocodeOSM(coords.lat, coords.lng);
       setLocation({
         lat: coords.lat,
         lng: coords.lng,
@@ -18,6 +24,10 @@ export const LocationPicker = ({ location, setLocation }) => {
         landmark: coords.isSimulated ? "Simulated Grid Pin" : "GPS Triangulated",
         accuracy: coords.accuracy
       });
+
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([coords.lat, coords.lng], 15, { duration: 1 });
+      }
     } catch (err) {
       console.error("GPS detection error:", err);
     } finally {
@@ -34,7 +44,120 @@ export const LocationPicker = ({ location, setLocation }) => {
       accuracy: 8
     });
     setShowPresets(false);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([preset.lat, preset.lng], 15, { duration: 0.8 });
+    }
   };
+
+  // Initialize interactive OpenStreetMap
+  useEffect(() => {
+    if (!showMap || !mapContainerRef.current) return;
+
+    const container = mapContainerRef.current;
+    if (container._leaflet_id) {
+      container._leaflet_id = null;
+    }
+
+    const currentLat = location?.lat || 13.0827;
+    const currentLng = location?.lng || 80.2707;
+
+    const map = L.map(container, {
+      center: [currentLat, currentLng],
+      zoom: 14,
+      zoomControl: false,
+      attributionControl: false
+    });
+
+    // Standard OpenStreetMap tile layer
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      subdomains: "abc"
+    }).addTo(map);
+
+    L.control.zoom({ position: "bottomright" }).addTo(map);
+
+    // Draggable OpenStreetMap Emergency Pin
+    const pinIcon = L.divIcon({
+      className: "custom-osm-picker-pin",
+      html: `
+        <div style="position: relative; width: 32px; height: 32px; cursor: grab;">
+          <div style="position: absolute; inset: -4px; border-radius: 9999px; background: rgba(239, 68, 68, 0.4); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          <div style="width: 28px; height: 28px; border-radius: 9999px; background-color: #ef4444; border: 2px solid #ffffff; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 14px;">
+            📍
+          </div>
+        </div>
+      `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+
+    const marker = L.marker([currentLat, currentLng], {
+      icon: pinIcon,
+      draggable: true
+    }).addTo(map);
+
+    markerRef.current = marker;
+    mapInstanceRef.current = map;
+
+    // Click map to reposition pin & reverse-geocode with OpenStreetMap
+    map.on("click", async (e) => {
+      const { lat, lng } = e.latlng;
+      const newLat = Number(lat.toFixed(5));
+      const newLng = Number(lng.toFixed(5));
+      marker.setLatLng([newLat, newLng]);
+      const address = await geoService.reverseGeocodeOSM(newLat, newLng);
+      setLocation((prev) => ({
+        ...prev,
+        lat: newLat,
+        lng: newLng,
+        address: address,
+        landmark: "OpenStreetMap Pin Drop"
+      }));
+    });
+
+    // Drag pin to reposition
+    marker.on("dragend", async (e) => {
+      const { lat, lng } = e.target.getLatLng();
+      const newLat = Number(lat.toFixed(5));
+      const newLng = Number(lng.toFixed(5));
+      const address = await geoService.reverseGeocodeOSM(newLat, newLng);
+      setLocation((prev) => ({
+        ...prev,
+        lat: newLat,
+        lng: newLng,
+        address: address,
+        landmark: "OpenStreetMap Pin Drop"
+      }));
+    });
+
+    // Layout adjustment
+    const timer = setTimeout(() => map.invalidateSize(), 150);
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    });
+    resizeObserver.observe(container);
+
+    return () => {
+      clearTimeout(timer);
+      resizeObserver.disconnect();
+      map.remove();
+      mapInstanceRef.current = null;
+      markerRef.current = null;
+      if (container) {
+        container._leaflet_id = null;
+      }
+    };
+  }, [showMap]);
+
+  // Sync marker position when external coords update
+  useEffect(() => {
+    if (markerRef.current && location?.lat && location?.lng) {
+      markerRef.current.setLatLng([location.lat, location.lng]);
+    }
+  }, [location?.lat, location?.lng]);
 
   return (
     <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-3">
@@ -43,16 +166,40 @@ export const LocationPicker = ({ location, setLocation }) => {
           <MapPin className="w-4 h-4 text-rose-500" />
           <span>GPS Coordinates & Location</span>
         </label>
-        <button
-          type="button"
-          onClick={handleAutoDetect}
-          disabled={isLocating}
-          className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 transition-colors px-2 py-1 rounded bg-rose-500/10 border border-rose-500/20"
-        >
-          <Navigation className={`w-3 h-3 ${isLocating ? "animate-spin" : ""}`} />
-          <span>{isLocating ? "Acquiring..." : "Auto-Detect GPS"}</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowMap(!showMap)}
+            className="text-xs font-medium text-slate-400 hover:text-white flex items-center gap-1 transition-colors px-2 py-1 rounded bg-slate-800 border border-slate-700"
+            title="Toggle OpenStreetMap"
+          >
+            <MapIcon className="w-3 h-3 text-emerald-400" />
+            <span>{showMap ? "Hide Map" : "OpenStreetMap"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleAutoDetect}
+            disabled={isLocating}
+            className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1 transition-colors px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/20"
+          >
+            <Navigation className={`w-3 h-3 ${isLocating ? "animate-spin" : ""}`} />
+            <span>{isLocating ? "Locating..." : "Auto-GPS"}</span>
+          </button>
+        </div>
       </div>
+
+      {/* Embedded OpenStreetMap Pin-Drop View */}
+      {showMap && (
+        <div className="relative w-full h-[200px] rounded-lg overflow-hidden border border-slate-800 shadow-inner">
+          <div ref={mapContainerRef} className="w-full h-full" />
+          <div className="absolute top-2 left-2 z-[20] bg-slate-950/85 backdrop-blur-sm border border-slate-800 rounded-md px-2 py-0.5 text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+            <span>🗺️ Tap or drag pin to adjust location</span>
+          </div>
+          <div className="absolute bottom-1 left-2 z-[20] text-[9px] text-slate-500 bg-slate-950/70 px-1.5 rounded">
+            © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">OpenStreetMap</a>
+          </div>
+        </div>
+      )}
 
       {/* Coordinate & Address Preview Card */}
       <div className="bg-slate-950/70 border border-slate-800/80 rounded-lg p-3 text-xs">
