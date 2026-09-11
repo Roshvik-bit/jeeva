@@ -7,6 +7,7 @@ import { mockAiClassifier } from "../services/mockAiClassifier";
 import { calculatePriorityScore } from "../services/priorityScoring";
 import { duplicateDetector } from "../services/duplicateDetector";
 import { geoService } from "../services/geoService";
+import { supabaseService } from "../services/supabaseService";
 
 const EmergencyContext = createContext();
 
@@ -95,6 +96,47 @@ export const EmergencyProvider = ({ children }) => {
     }
   }, []);
 
+  // Supabase Initial Fetch & Real-time Live Listener
+  useEffect(() => {
+    if (!supabaseService.isConfigured()) return;
+
+    // 1. Initial Cloud Fetch
+    supabaseService.fetchIncidents().then((cloudIncidents) => {
+      if (cloudIncidents && cloudIncidents.length > 0) {
+        setIncidents((prev) => {
+          const cloudIds = new Set(cloudIncidents.map((i) => i.id));
+          const localOnly = prev.filter((i) => !cloudIds.has(i.id));
+          return [...cloudIncidents, ...localOnly];
+        });
+      }
+    });
+
+    // 2. Real-time Live WebSockets Subscription
+    const unsubscribe = supabaseService.subscribeToIncidents(
+      (newIncident) => {
+        setIncidents((prev) => {
+          if (prev.some((i) => i.id === newIncident.id)) return prev;
+          return [newIncident, ...prev];
+        });
+        playEmergencyAudio("siren");
+        addToast({
+          type: "warning",
+          title: "Real-time Incident Alert",
+          message: `Distress alert #${newIncident.id} received in real-time from Supabase.`
+        });
+      },
+      (updatedIncident) => {
+        setIncidents((prev) =>
+          prev.map((i) => (i.id === updatedIncident.id ? { ...i, ...updatedIncident } : i))
+        );
+      }
+    );
+
+    return () => {
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, [addToast, playEmergencyAudio]);
+
   // Synchronize queued offline reports to the cloud/master store
   const syncOfflineReports = useCallback(async () => {
     const queue = await storageService.getOfflineOutboxAsync();
@@ -145,6 +187,9 @@ export const EmergencyProvider = ({ children }) => {
           inc.id === dupCheck.matchedIncidentId ? dupCheck.updatedIncident : inc
         );
         resultingIncidentId = dupCheck.matchedIncidentId;
+        if (supabaseService.isConfigured()) {
+          supabaseService.updateIncident(dupCheck.matchedIncidentId, dupCheck.updatedIncident);
+        }
       } else {
         // Create new incident
         const scored = calculatePriorityScore({
@@ -182,6 +227,9 @@ export const EmergencyProvider = ({ children }) => {
 
         currentIncidents.unshift(newIncident);
         resultingIncidentId = newIncident.id;
+        if (supabaseService.isConfigured()) {
+          supabaseService.insertIncident(newIncident);
+        }
       }
 
       // Optional remote API cloud sync if VITE_API_BASE_URL is configured
@@ -342,6 +390,9 @@ export const EmergencyProvider = ({ children }) => {
         );
         finalIncidentId = dupCheck.matchedIncidentId;
         isMerged = true;
+        if (supabaseService.isConfigured()) {
+          supabaseService.updateIncident(dupCheck.matchedIncidentId, dupCheck.updatedIncident);
+        }
 
         addToast({
           type: "info",
@@ -383,6 +434,9 @@ export const EmergencyProvider = ({ children }) => {
 
         setIncidents((prev) => [newIncident, ...prev]);
         finalIncidentId = newIncident.id;
+        if (supabaseService.isConfigured()) {
+          supabaseService.insertIncident(newIncident);
+        }
       }
 
       // Add to citizen personal history
@@ -468,6 +522,10 @@ export const EmergencyProvider = ({ children }) => {
       storageService.updateUserReportStatus(incidentId, "Dispatched", unitName);
       setMyReports(storageService.getUserReports());
 
+      if (supabaseService.isConfigured()) {
+        supabaseService.updateIncident(incidentId, { status: "Dispatched", assignedUnit: unitId });
+      }
+
       playEmergencyAudio("beep");
       addToast({
         type: "success",
@@ -509,6 +567,10 @@ export const EmergencyProvider = ({ children }) => {
       // Update citizen copy
       storageService.updateUserReportStatus(incidentId, newStatus);
       setMyReports(storageService.getUserReports());
+
+      if (supabaseService.isConfigured()) {
+        supabaseService.updateIncident(incidentId, { status: newStatus });
+      }
 
       addToast({
         type: "info",
