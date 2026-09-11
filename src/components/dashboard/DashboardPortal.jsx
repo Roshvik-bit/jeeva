@@ -19,11 +19,12 @@ import {
   RefreshCw,
   Layers,
   ChevronRight,
-  ExternalLink
+  ExternalLink,
+  Trash2
 } from "lucide-react";
 
 export const DashboardPortal = () => {
-  const { incidents, rescueUnits, isOnline, setActivePortal, t } = useEmergency();
+  const { incidents, rescueUnits, isOnline, setActivePortal, clearAllIncidents, t } = useEmergency();
 
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [dispatchTargetIncident, setDispatchTargetIncident] = useState(null);
@@ -231,6 +232,20 @@ export const DashboardPortal = () => {
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600">
               Node: IN-MAA-01
             </span>
+            {incidents.length > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to remove all incidents from the application and database?")) {
+                    clearAllIncidents();
+                  }
+                }}
+                className="text-[10px] px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                title="Remove all incidents from application and Supabase"
+              >
+                <Trash2 className="w-3 h-3 text-red-600" />
+                <span>Clear All Incidents</span>
+              </button>
+            )}
           </div>
         </div>
 

@@ -23,10 +23,14 @@ export const PriorityIncidentList = ({
 
   if (incidents.length === 0) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center text-center p-6 bg-white border border-slate-200 rounded-xl text-slate-500 shadow-sm">
-        <AlertOctagon className="w-10 h-10 stroke-[1.5] mb-2 text-slate-400" />
-        <p className="text-sm font-bold text-slate-800">No matching incidents found</p>
-        <p className="text-xs text-slate-500 mt-1">Try relaxing filters or search terms.</p>
+      <div className="h-64 flex flex-col items-center justify-center text-center p-6 bg-white border border-slate-200 rounded-xl text-slate-500 shadow-sm space-y-2">
+        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-1">
+          <AlertOctagon className="w-6 h-6 stroke-[1.8]" />
+        </div>
+        <p className="text-sm font-bold text-slate-800">No Active Incidents</p>
+        <p className="text-xs text-slate-500 max-w-xs">
+          All zones clear. Rescue teams are on standby awaiting new citizen distress dispatches.
+        </p>
       </div>
     );
   }

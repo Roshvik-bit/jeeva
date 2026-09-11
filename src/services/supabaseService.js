@@ -163,7 +163,7 @@ export const supabaseService = {
   },
 
   /**
-   * Fetch all incidents from Supabase ordered by created_at DESC
+   * Fetch all incidents from Supabase ordered by created_at DESC (excludes archived/legacy demo incidents)
    */
   fetchIncidents: async () => {
     if (!isSupabaseConfigured || !supabase) return null;
@@ -171,6 +171,7 @@ export const supabaseService = {
       const { data, error } = await supabase
         .from("incidents")
         .select("*")
+        .neq("status", "Archived")
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -178,10 +179,56 @@ export const supabaseService = {
         return null;
       }
 
-      return Array.isArray(data) ? data.map(mapRowToIncident) : [];
+      return Array.isArray(data)
+        ? data
+            .filter(
+              (row) =>
+                row.status !== "Archived" &&
+                row.status !== "Deleted" &&
+                !row.id.startsWith("INC-2026-00") &&
+                row.id !== "TEST-INIT-001" &&
+                row.id !== "JEEVA-2026-TEST"
+            )
+            .map(mapRowToIncident)
+        : [];
     } catch (err) {
       console.warn("Supabase fetch exception:", err);
       return null;
+    }
+  },
+
+  /**
+   * Delete or archive an incident in Supabase
+   */
+  deleteIncident: async (id) => {
+    if (!isSupabaseConfigured || !supabase) return false;
+    try {
+      await supabase.from("incidents").update({ status: "Archived" }).eq("id", id);
+      await supabase.from("incidents").delete().eq("id", id);
+      return true;
+    } catch (e) {
+      console.warn("Delete incident error:", e);
+      return false;
+    }
+  },
+
+  /**
+   * Remove/archive all incidents in Supabase
+   */
+  clearAllIncidents: async () => {
+    if (!isSupabaseConfigured || !supabase) return false;
+    try {
+      const { data } = await supabase.from("incidents").select("id");
+      if (data && data.length > 0) {
+        for (const row of data) {
+          await supabase.from("incidents").update({ status: "Archived" }).eq("id", row.id);
+          await supabase.from("incidents").delete().eq("id", row.id);
+        }
+      }
+      return true;
+    } catch (e) {
+      console.warn("Clear all incidents error:", e);
+      return false;
     }
   },
 
@@ -274,7 +321,15 @@ export const supabaseService = {
           "postgres_changes",
           { event: "INSERT", schema: "public", table: "incidents" },
           (payload) => {
-            if (payload.new && onInsert) {
+            if (
+              payload.new &&
+              payload.new.status !== "Archived" &&
+              payload.new.status !== "Deleted" &&
+              !payload.new.id.startsWith("INC-2026-00") &&
+              payload.new.id !== "TEST-INIT-001" &&
+              payload.new.id !== "JEEVA-2026-TEST" &&
+              onInsert
+            ) {
               onInsert(mapRowToIncident(payload.new));
             }
           }

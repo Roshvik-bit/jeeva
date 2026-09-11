@@ -17,11 +17,22 @@ export const EmergencyProvider = ({ children }) => {
   const [language, setLanguage] = useState("en");
   const [isOnline, setIsOnline] = useState(true);
 
-  // Core Data Stores
+  // Core Data Stores (Clean startup: only genuine new incidents)
   const [incidents, setIncidents] = useState(() => {
     const saved = storageService.getIncidents();
-    const list = saved && saved.length > 0 ? saved : PRESEEDED_INCIDENTS;
-    return list.map((inc) => ({
+    const filteredSaved = (saved || []).filter(
+      (inc) =>
+        inc &&
+        !inc.id.startsWith("INC-2026-00") &&
+        inc.id !== "TEST-INIT-001" &&
+        inc.id !== "JEEVA-2026-TEST" &&
+        inc.status !== "Archived" &&
+        inc.status !== "Deleted"
+    );
+    if (saved && saved.length !== filteredSaved.length) {
+      storageService.saveIncidents(filteredSaved);
+    }
+    return filteredSaved.map((inc) => ({
       ...inc,
       priorityScore: inc.priorityScore > 10 ? Number((inc.priorityScore / 10).toFixed(1)) : inc.priorityScore
     }));
@@ -100,14 +111,20 @@ export const EmergencyProvider = ({ children }) => {
   useEffect(() => {
     if (!supabaseService.isConfigured()) return;
 
-    // 1. Initial Cloud Fetch
+    // 1. Initial Cloud Fetch (Only load genuine new incidents)
     supabaseService.fetchIncidents().then((cloudIncidents) => {
-      if (cloudIncidents && cloudIncidents.length > 0) {
-        setIncidents((prev) => {
-          const cloudIds = new Set(cloudIncidents.map((i) => i.id));
-          const localOnly = prev.filter((i) => !cloudIds.has(i.id));
-          return [...cloudIncidents, ...localOnly];
-        });
+      if (cloudIncidents) {
+        const cleanCloud = cloudIncidents.filter(
+          (i) =>
+            i &&
+            !i.id.startsWith("INC-2026-00") &&
+            i.id !== "TEST-INIT-001" &&
+            i.id !== "JEEVA-2026-TEST" &&
+            i.status !== "Archived" &&
+            i.status !== "Deleted"
+        );
+        setIncidents(cleanCloud);
+        storageService.saveIncidents(cleanCloud);
       }
     });
 
@@ -606,6 +623,20 @@ export const EmergencyProvider = ({ children }) => {
     [addToast]
   );
 
+  // Clear all incidents across the application and Supabase
+  const clearAllIncidents = useCallback(async () => {
+    setIncidents([]);
+    storageService.clearIncidents();
+    if (supabaseService.isConfigured()) {
+      await supabaseService.clearAllIncidents();
+    }
+    addToast({
+      type: "info",
+      title: "Incidents Cleared",
+      message: "All existing incidents have been removed from the platform and database."
+    });
+  }, [addToast]);
+
   // Translation helper
   const t = { ...translations.en, ...(translations[language] || {}) };
 
@@ -631,6 +662,7 @@ export const EmergencyProvider = ({ children }) => {
         syncOfflineReports,
         dispatchRescueUnit,
         updateIncidentStatus,
+        clearAllIncidents,
         playEmergencyAudio
       }}
     >

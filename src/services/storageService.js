@@ -183,6 +183,22 @@ export const storageService = {
     }
   },
 
+  clearIncidents: () => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.INCIDENTS);
+      openIDB().then((db) => {
+        if (!db) return;
+        try {
+          const tx = db.transaction(IDB_STORE_INCIDENTS, "readwrite");
+          const store = tx.objectStore(IDB_STORE_INCIDENTS);
+          store.clear();
+        } catch (err) {}
+      });
+    } catch (e) {
+      console.error("Failed to clear incidents from storage:", e);
+    }
+  },
+
   // Synchronous Offline Outbox Queue (LocalStorage)
   getOfflineOutbox: () => {
     try {
