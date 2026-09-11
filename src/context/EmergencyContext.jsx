@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { PRESEEDED_INCIDENTS } from "../mockData/preseededIncidents";
 import { RESCUE_UNITS } from "../mockData/rescueUnits";
 import { translations } from "../mockData/translations";
@@ -65,45 +65,90 @@ export const EmergencyProvider = ({ children }) => {
     storageService.saveIncidents(incidents);
   }, [incidents]);
 
-  // Audio Siren generator using Web Audio API
-  const playEmergencyAudio = useCallback((toneType = "siren") => {
+  // Reference to any actively playing emergency siren audio element
+  const activeSirenAudioRef = useRef(null);
+
+  const playSynthSiren = () => {
     try {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
       const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sawtooth";
+      gain.gain.setValueAtTime(0.12, ctx.currentTime);
+      osc.frequency.setValueAtTime(650, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(950, ctx.currentTime + 0.35);
+      osc.frequency.linearRampToValueAtTime(650, ctx.currentTime + 0.7);
+      osc.frequency.linearRampToValueAtTime(950, ctx.currentTime + 1.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 1.4);
+    } catch (_) {}
+  };
 
+  const playSynthBeep = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+    } catch (_) {}
+  };
+
+  // Audio Siren generator using the Android Emergency Alert MP3 with synth fallback
+  const playEmergencyAudio = useCallback((toneType = "siren") => {
+    try {
       if (toneType === "siren") {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sawtooth";
-        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        // Stop any previously playing siren so sounds do not overlap
+        if (activeSirenAudioRef.current) {
+          try {
+            activeSirenAudioRef.current.pause();
+            activeSirenAudioRef.current.currentTime = 0;
+          } catch (_) {}
+        }
 
-        // Siren frequency modulation
-        osc.frequency.setValueAtTime(650, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(950, ctx.currentTime + 0.35);
-        osc.frequency.linearRampToValueAtTime(650, ctx.currentTime + 0.7);
-        osc.frequency.linearRampToValueAtTime(950, ctx.currentTime + 1.05);
+        // Play the Android Emergency Alert Tone (converted from YouTube: aDAQlghH8zc)
+        const audio = new Audio("/sounds/sos-alarm.mp3");
+        audio.volume = 0.9;
+        activeSirenAudioRef.current = audio;
 
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.4);
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((err) => {
+            console.warn("HTML5 Audio playback prevented, using synthesizer fallback:", err);
+            playSynthSiren();
+          });
+        }
+        return;
+      }
 
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 1.4);
-      } else if (toneType === "beep") {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        gain.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.3);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.3);
+      if (toneType === "beep") {
+        playSynthBeep();
       }
     } catch (err) {
-      console.warn("Web Audio playback prevented by browser policy:", err);
+      console.warn("Audio playback prevented by browser policy:", err);
+    }
+  }, []);
+
+  const stopEmergencyAudio = useCallback(() => {
+    if (activeSirenAudioRef.current) {
+      try {
+        activeSirenAudioRef.current.pause();
+        activeSirenAudioRef.current.currentTime = 0;
+      } catch (_) {}
+      activeSirenAudioRef.current = null;
     }
   }, []);
 
@@ -768,7 +813,8 @@ export const EmergencyProvider = ({ children }) => {
         dispatchRescueUnit,
         updateIncidentStatus,
         clearAllIncidents,
-        playEmergencyAudio
+        playEmergencyAudio,
+        stopEmergencyAudio
       }}
     >
       {children}
