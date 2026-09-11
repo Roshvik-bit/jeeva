@@ -49,17 +49,17 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
   };
 
   return (
-    <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3.5 space-y-3">
+    <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-          <Camera className="w-4 h-4 text-rose-500" />
-          <span>Disaster Photo & Edge AI Vision</span>
+        <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+          <Camera className="w-4 h-4 text-blue-600" />
+          <span>Incident Photo & AI Analysis</span>
         </label>
         {photoUrl && (
           <button
             type="button"
             onClick={handleClearPhoto}
-            className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1"
+            className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1 font-medium"
           >
             <X className="w-3.5 h-3.5" />
             <span>Remove</span>
@@ -71,8 +71,8 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
         <div className="space-y-2.5">
           <div className="flex flex-col sm:flex-row gap-2">
             {/* File Upload / Camera Trigger */}
-            <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-slate-700 hover:border-rose-500/50 bg-slate-950/40 hover:bg-slate-950/80 cursor-pointer text-xs font-medium text-slate-300 transition-colors">
-              <Camera className="w-4 h-4 text-rose-400" />
+            <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/50 cursor-pointer text-xs font-medium text-slate-700 transition-colors">
+              <Camera className="w-4 h-4 text-blue-600" />
               <span>Take Photo / Upload</span>
               <input
                 type="file"
@@ -87,18 +87,18 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
             <button
               type="button"
               onClick={() => setShowPicker(!showPicker)}
-              className="flex items-center justify-center gap-2 p-3 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition-colors"
+              className="flex items-center justify-center gap-2 p-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-semibold text-slate-700 transition-colors"
             >
-              <ImageIcon className="w-4 h-4 text-indigo-400" />
+              <ImageIcon className="w-4 h-4 text-teal-600" />
               <span>Pick Test Scenario</span>
             </button>
           </div>
 
           {/* Test Disaster Preset Gallery */}
           {showPicker && (
-            <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 space-y-2 animate-fadeIn">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                Select Realistic Disaster Photo:
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2 animate-fadeIn">
+              <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                Select Realistic Incident Photo:
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {SAMPLE_DISASTER_IMAGES.map((sample) => (
@@ -106,19 +106,19 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
                     key={sample.id}
                     type="button"
                     onClick={() => handleSelectSample(sample)}
-                    className="flex items-center gap-2.5 p-2 rounded-lg bg-slate-900 hover:bg-slate-800/90 border border-slate-800 text-left transition-all hover:border-slate-600"
+                    className="flex items-center gap-2.5 p-2 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 text-left transition-all hover:border-blue-300"
                   >
                     <img
                       src={sample.url}
                       alt={sample.label}
-                      className="w-12 h-12 rounded object-cover shrink-0"
+                      className="w-12 h-12 rounded object-cover shrink-0 border border-slate-200"
                     />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-200 truncate">
+                      <p className="text-xs font-semibold text-slate-800 truncate">
                         {sample.label}
                       </p>
-                      <p className="text-[10px] text-rose-400 capitalize">
-                        {sample.category} • Sev: {sample.severity}
+                      <p className="text-[10px] text-red-600 capitalize">
+                        {sample.category} • Severity: {sample.severity}/10
                       </p>
                     </div>
                   </button>
@@ -130,17 +130,17 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
       ) : (
         /* Image Preview & AI Inference Results */
         <div className="space-y-3">
-          <div className="relative rounded-lg overflow-hidden border border-slate-800 bg-slate-950 max-h-48 flex items-center justify-center">
+          <div className="relative rounded-lg overflow-hidden border border-slate-200 bg-slate-100 max-h-48 flex items-center justify-center">
             <img
               src={photoUrl}
               alt="Disaster Scene"
               className="w-full h-44 object-cover"
             />
             {isAnalyzing && (
-              <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-white">
-                <RefreshCw className="w-6 h-6 text-rose-400 animate-spin" />
-                <span className="text-xs font-mono font-semibold tracking-wider text-rose-300">
-                  RUNNING EDGE AI VISION MODEL...
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-slate-800">
+                <RefreshCw className="w-6 h-6 text-blue-600 animate-spin" />
+                <span className="text-xs font-semibold text-slate-700">
+                  Analyzing incident image...
                 </span>
               </div>
             )}
@@ -148,27 +148,25 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
 
           {/* AI Vision Insights Card */}
           {aiClassification && !isAnalyzing && (
-            <div className="bg-slate-950/90 border border-indigo-500/30 rounded-xl p-3 space-y-2">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-indigo-400">
-                  <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
-                  <span>
-                    {aiClassification.isLiveAi ? "Google Gemini Vision AI" : "Edge AI Hazard Assessment"}
-                  </span>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-700">
+                  <Sparkles className="w-4 h-4 text-blue-600" />
+                  <span>AI-assisted image analysis</span>
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-950 text-indigo-300 border border-indigo-500/40">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-100 text-blue-800 border border-blue-200">
                   Confidence: {aiClassification.confidence}%
                 </span>
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs font-bold text-slate-100 flex items-start gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                <p className="text-xs font-semibold text-slate-800 flex items-start gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
                   <span>{aiClassification.detectedHazard}</span>
                 </p>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-600">
                   Hazard Severity Rating:{" "}
-                  <span className="font-bold text-rose-400 font-mono">
+                  <span className="font-bold text-red-600">
                     {aiClassification.hazardSeverity}/10
                   </span>
                 </p>
@@ -180,7 +178,7 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
                   {aiClassification.visualTags.map((tag, i) => (
                     <span
                       key={i}
-                      className="text-[10px] font-medium bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700"
+                      className="text-[10px] font-medium bg-white text-slate-700 px-2 py-0.5 rounded-md border border-slate-200"
                     >
                       ✓ {tag}
                     </span>

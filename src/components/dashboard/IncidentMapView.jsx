@@ -13,14 +13,11 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
 
   const [showRescueUnits, setShowRescueUnits] = useState(true);
   const [showDangerZones, setShowDangerZones] = useState(true);
-  const [mapStyle, setMapStyle] = useState("dark"); // "dark" | "satellite" | "streets"
+  const [mapStyle, setMapStyle] = useState("streets"); // "streets" | "satellite" | "hot"
   const tileLayerRef = useRef(null);
 
   // Helper to get tile layer options based on OpenStreetMap style
   const getTileConfig = (style) => {
-    const mapboxToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-    const cartoKey = import.meta.env.VITE_CARTO_API_KEY;
-
     if (style === "satellite") {
       return {
         url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
@@ -38,43 +35,11 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
       };
     }
 
-    if (style === "osm" || style === "streets") {
-      return {
-        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        subdomains: "abc",
-        maxZoom: 19
-      };
-    }
-
-    // Default: Tactical Dark
-    // 1. Optional Mapbox dark style if key is provided
-    if (mapboxToken && mapboxToken.startsWith("pk.")) {
-      return {
-        url: `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/{z}/{x}/{y}?access_token=${mapboxToken}`,
-        attribution: '&copy; <a href="https://www.mapbox.com/">Mapbox</a> &copy; OpenStreetMap',
-        tileSize: 512,
-        zoomOffset: -1,
-        maxZoom: 19
-      };
-    }
-
-    // 2. Optional CARTO with valid API key
-    if (cartoKey) {
-      return {
-        url: `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?api_key=${cartoKey}`,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
-        subdomains: "abcd",
-        maxZoom: 19
-      };
-    }
-
-    // 3. 100% Free OpenStreetMap with high-contrast tactical dark filter (NO API KEY REQUIRED, NO WATERMARKS)
+    // Default: Clean Standard OpenStreetMap (100% Free, NO API KEY, Clean Natural Colors)
     return {
       url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       subdomains: "abc",
-      className: "map-tiles-tactical-dark",
       maxZoom: 19
     };
   };
@@ -250,29 +215,29 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
 
       // Popup Content
       const popupHtml = `
-        <div style="padding: 12px; font-family: inherit; width: 240px;">
+        <div style="padding: 12px; font-family: system-ui, -apple-system, sans-serif; width: 240px; color: #1F2937;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-            <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; color: ${pinColor}; letter-spacing: 0.05em;">
+            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: ${pinColor}; letter-spacing: 0.05em;">
               ${inc.severity} • ${inc.category}
             </span>
-            <span style="font-size: 10px; font-family: monospace; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #f8fafc;">
+            <span style="font-size: 10px; font-family: monospace; font-weight: 700; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #334155; border: 1px solid #e2e8f0;">
               Score: ${inc.priorityScore}/100
             </span>
           </div>
-          <h4 style="font-size: 12px; font-weight: 700; color: #ffffff; margin: 0 0 6px 0; line-height: 1.3;">
-            ${inc.title}
+          <h4 style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; line-height: 1.3;">
+            ${inc.location?.address || inc.title}
           </h4>
-          <p style="font-size: 11px; color: #94a3b8; margin: 0 0 8px 0;">
+          <p style="font-size: 11px; color: #64748b; margin: 0 0 8px 0;">
             📍 ${inc.location.address}
           </p>
-          <div style="display: flex; gap: 8px; font-size: 11px; color: #cbd5e1; margin-bottom: 10px; font-weight: 600;">
-            <span>👥 ${inc.peopleCount} trapped</span>
-            ${inc.hasMedicalEmergency ? '<span style="color: #ef4444;">🚨 Medical Crisis</span>' : ""}
+          <div style="display: flex; gap: 8px; font-size: 11px; color: #475569; margin-bottom: 10px; font-weight: 600;">
+            <span>👥 ${inc.peopleCount} people</span>
+            ${inc.hasMedicalEmergency ? '<span style="color: #dc2626;">🚨 Medical needed</span>' : ""}
           </div>
           <button id="btn-inspect-${inc.id}" style="
             width: 100%;
-            padding: 6px 10px;
-            background: #2563eb;
+            padding: 7px 10px;
+            background: #1976D2;
             color: #ffffff;
             font-size: 11px;
             font-weight: 700;
@@ -280,7 +245,7 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
             border-radius: 6px;
             cursor: pointer;
           ">
-            Inspect Incident Details
+            View Incident Details
           </button>
         </div>
       `;
@@ -337,17 +302,17 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
 
         const unitMarker = L.marker([unit.lat, unit.lng], { icon: unitIcon });
         unitMarker.bindPopup(`
-          <div style="padding: 10px; font-family: inherit; width: 220px;">
-            <span style="font-size: 10px; font-weight: 800; color: #38bdf8; text-transform: uppercase;">
+          <div style="padding: 10px; font-family: system-ui, -apple-system, sans-serif; width: 220px; color: #1F2937;">
+            <span style="font-size: 10px; font-weight: 700; color: #0284c7; text-transform: uppercase;">
               ${unit.type} • ${unit.status}
             </span>
-            <h4 style="font-size: 12px; font-weight: 700; color: #ffffff; margin: 4px 0;">
+            <h4 style="font-size: 12px; font-weight: 700; color: #0f172a; margin: 4px 0;">
               ${unit.name}
             </h4>
-            <p style="font-size: 11px; color: #94a3b8; margin: 0 0 6px 0;">
+            <p style="font-size: 11px; color: #64748b; margin: 0 0 6px 0;">
               Base: ${unit.baseLocation}
             </p>
-            <p style="font-size: 11px; color: #e2e8f0; font-family: monospace;">
+            <p style="font-size: 11px; color: #334155; font-family: monospace;">
               📞 ${unit.contact}
             </p>
           </div>
@@ -376,23 +341,23 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
   };
 
   return (
-    <div className="relative w-full h-[400px] sm:h-[480px] lg:h-[520px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl">
+    <div className="relative w-full h-[400px] sm:h-[480px] lg:h-[520px] rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-100">
       {/* Map Container */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
       {/* Map Controls Floating Overlay */}
       <div className="absolute top-3 left-3 z-[20] flex flex-wrap items-center gap-2">
         {/* Layer Filters: Danger Zones & Responders */}
-        <div className="bg-slate-950/85 backdrop-blur-md border border-slate-800 rounded-xl p-1.5 flex items-center gap-1 shadow-lg">
+        <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl p-1.5 flex items-center gap-1 shadow-md">
           <button
             onClick={() => setShowDangerZones(!showDangerZones)}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
               showDangerZones
-                ? "bg-rose-950 text-rose-300 border border-rose-500/40"
-                : "text-slate-400 hover:text-white"
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span className="w-2 h-2 rounded-full bg-red-600"></span>
             <span>Danger Zones</span>
           </button>
 
@@ -400,8 +365,8 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
             onClick={() => setShowRescueUnits(!showRescueUnits)}
             className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
               showRescueUnits
-                ? "bg-indigo-950 text-indigo-300 border border-indigo-500/40"
-                : "text-slate-400 hover:text-white"
+                ? "bg-blue-50 text-blue-700 border border-blue-200"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
             <span>🚒 Responders</span>
@@ -409,49 +374,37 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
         </div>
 
         {/* Map Imagery Style Switcher */}
-        <div className="bg-slate-950/85 backdrop-blur-md border border-slate-800 rounded-xl p-1 flex items-center gap-1 shadow-lg">
+        <div className="bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl p-1 flex items-center gap-1 shadow-md">
           <button
-            onClick={() => setMapStyle("dark")}
-            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapStyle === "dark"
-                ? "bg-slate-800 text-white shadow-sm"
-                : "text-slate-400 hover:text-white"
-            }`}
-            title="Tactical Dark OpenStreetMap"
-          >
-            🌑 Tactical
-          </button>
-
-          <button
-            onClick={() => setMapStyle("osm")}
-            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
-              mapStyle === "osm" || mapStyle === "streets"
-                ? "bg-emerald-600 text-white shadow-sm shadow-emerald-600/30"
-                : "text-slate-400 hover:text-white"
+            onClick={() => setMapStyle("streets")}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+              mapStyle === "streets" || mapStyle === "osm"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
             title="Standard OpenStreetMap (100% Free & Open Source)"
           >
-            🗺️ OpenStreetMap
+            🗺️ Map
           </button>
 
           <button
             onClick={() => setMapStyle("hot")}
-            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
               mapStyle === "hot"
-                ? "bg-amber-600 text-white shadow-sm shadow-amber-600/30"
-                : "text-slate-400 hover:text-white"
+                ? "bg-amber-600 text-white shadow-sm"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
-            title="Humanitarian OpenStreetMap Team (Disaster Response Layer)"
+            title="Humanitarian OpenStreetMap Layer"
           >
             🚑 Humanitarian
           </button>
 
           <button
             onClick={() => setMapStyle("satellite")}
-            className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
               mapStyle === "satellite"
-                ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
-                : "text-slate-400 hover:text-white"
+                ? "bg-teal-600 text-white shadow-sm"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
             title="High-Resolution Satellite Aerial View"
           >
@@ -462,20 +415,20 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
         <button
           onClick={handleResetView}
           title="Reset Map Center"
-          className="p-2 rounded-xl bg-slate-950/85 backdrop-blur-md border border-slate-800 text-slate-300 hover:text-white shadow-lg hover:border-slate-700 transition-colors"
+          className="p-2 rounded-xl bg-white/95 backdrop-blur-md border border-slate-200 text-slate-700 hover:text-slate-900 shadow-md hover:bg-slate-50 transition-colors"
         >
           <Compass className="w-4 h-4" />
         </button>
       </div>
 
       {/* Legend Card in Bottom Left */}
-      <div className="absolute bottom-3 left-3 z-[20] bg-slate-950/90 backdrop-blur-md border border-slate-800/90 rounded-xl p-2.5 shadow-xl hidden sm:block">
-        <p className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-          Incident Severity Legend
+      <div className="absolute bottom-3 left-3 z-[20] bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl p-2.5 shadow-md hidden sm:block">
+        <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+          Incident Severity
         </p>
-        <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-300">
+        <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-700">
           <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
             <span>Critical</span>
           </div>
           <div className="flex items-center gap-1">
@@ -483,11 +436,11 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
             <span>High</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
             <span>Medium</span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-green-600"></span>
             <span>Resolved</span>
           </div>
         </div>

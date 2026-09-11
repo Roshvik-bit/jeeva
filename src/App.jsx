@@ -11,7 +11,7 @@ const AppContent = () => {
   const { activePortal, setActivePortal, t } = useEmergency();
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-rose-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#F7F9FC] text-[#1F2937] selection:bg-blue-600 selection:text-white">
       {/* Global Header */}
       <Navbar />
 
@@ -26,11 +26,11 @@ const AppContent = () => {
       </main>
 
       {/* Mobile Fixed Bottom Navigation Bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-slate-950/95 border-t border-slate-800/90 backdrop-blur-lg px-4 py-2 flex items-center justify-around">
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 px-4 py-2 flex items-center justify-around shadow-md">
         <button
           onClick={() => setActivePortal("landing")}
-          className={`flex flex-col items-center gap-1 text-[10px] font-bold ${
-            activePortal === "landing" ? "text-rose-500" : "text-slate-400"
+          className={`flex flex-col items-center gap-1 text-[11px] font-medium ${
+            activePortal === "landing" ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-800"
           }`}
         >
           <Home className="w-5 h-5" />
@@ -39,57 +39,57 @@ const AppContent = () => {
 
         <button
           onClick={() => setActivePortal("citizen")}
-          className={`flex flex-col items-center gap-1 text-[10px] font-bold ${
-            activePortal === "citizen" ? "text-rose-500" : "text-slate-400"
+          className={`flex flex-col items-center gap-1 text-[11px] font-medium ${
+            activePortal === "citizen" ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-800"
           }`}
         >
           <Radio className="w-5 h-5" />
-          <span>Citizen SOS</span>
+          <span>Citizen App</span>
         </button>
 
         <button
           onClick={() => setActivePortal("dashboard")}
-          className={`flex flex-col items-center gap-1 text-[10px] font-bold ${
-            activePortal === "dashboard" ? "text-indigo-400" : "text-slate-400"
+          className={`flex flex-col items-center gap-1 text-[11px] font-medium ${
+            activePortal === "dashboard" ? "text-blue-700 font-bold" : "text-slate-500 hover:text-slate-800"
           }`}
         >
           <LayoutDashboard className="w-5 h-5" />
-          <span>Command Hub</span>
+          <span>Rescue Dashboard</span>
         </button>
       </nav>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-8 px-4 text-center text-xs text-slate-500 hidden sm:block">
+      {/* Clean Light Footer */}
+      <footer className="border-t border-slate-200 bg-white py-6 px-4 text-xs text-slate-500 hidden sm:block">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-slate-400">
-            <ShieldAlert className="w-4 h-4 text-rose-500" />
-            <span className="font-bold text-slate-200">JEEVA</span>
-            <span>• SIH Problem Statement ID: SIH26013</span>
+          <div className="flex items-center gap-2 text-slate-700">
+            <ShieldAlert className="w-4 h-4 text-blue-600" />
+            <span className="font-bold text-slate-900">JEEVA</span>
+            <span>• Disaster Response & Rescue Platform</span>
           </div>
 
-          <div className="flex items-center gap-4 text-slate-400 text-xs">
+          <div className="flex items-center gap-4 text-slate-600 text-xs">
             <button
               onClick={() => setActivePortal("landing")}
-              className="hover:text-white transition-colors"
+              className="hover:text-blue-600 transition-colors"
             >
-              Overview
+              Home
             </button>
             <button
               onClick={() => setActivePortal("citizen")}
-              className="hover:text-white transition-colors"
+              className="hover:text-blue-600 transition-colors"
             >
-              Citizen SOS
+              Citizen App
             </button>
             <button
               onClick={() => setActivePortal("dashboard")}
-              className="hover:text-white transition-colors"
+              className="hover:text-blue-600 transition-colors"
             >
-              Rescue Command
+              Rescue Dashboard
             </button>
           </div>
 
-          <p className="text-[11px] text-slate-500">
-            Designed for National Disaster Management & Rapid Response
+          <p className="text-[11px] text-slate-400">
+            Developed for Disaster Management & Rapid Rescue Coordination
           </p>
         </div>
       </footer>

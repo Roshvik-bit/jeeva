@@ -26,24 +26,24 @@ const ToastItem = ({ toast, onClose }) => {
     switch (toast.type) {
       case "warning":
         return {
-          bg: "bg-amber-950/90 border-amber-500/40 text-amber-100",
-          icon: <WifiOff className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          border: "border-amber-300",
+          icon: <WifiOff className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         };
       case "success":
         return {
-          bg: "bg-emerald-950/90 border-emerald-500/40 text-emerald-100",
-          icon: <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          border: "border-green-300",
+          icon: <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
         };
       case "danger":
         return {
-          bg: "bg-rose-950/90 border-rose-500/50 text-rose-100",
-          icon: <Siren className="w-5 h-5 text-rose-400 shrink-0 mt-0.5 animate-pulse" />
+          border: "border-red-300",
+          icon: <Siren className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
         };
       case "info":
       default:
         return {
-          bg: "bg-sky-950/90 border-sky-500/40 text-sky-100",
-          icon: <Info className="w-5 h-5 text-sky-400 shrink-0 mt-0.5" />
+          border: "border-blue-300",
+          icon: <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
         };
     }
   };
@@ -52,16 +52,16 @@ const ToastItem = ({ toast, onClose }) => {
 
   return (
     <div
-      className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-xl backdrop-blur-md transition-all duration-300 transform translate-y-0 ${theme.bg}`}
+      className={`pointer-events-auto flex items-start gap-3 p-3.5 rounded-lg border bg-white shadow-md text-slate-800 transition-all ${theme.border}`}
     >
       {theme.icon}
       <div className="flex-1 min-w-0">
-        <h4 className="text-sm font-semibold tracking-wide">{toast.title}</h4>
-        <p className="text-xs text-slate-300 mt-0.5 leading-relaxed">{toast.message}</p>
+        <h4 className="text-xs font-bold text-slate-900">{toast.title}</h4>
+        <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{toast.message}</p>
       </div>
       <button
         onClick={onClose}
-        className="text-slate-400 hover:text-white p-1 rounded-md transition-colors"
+        className="text-slate-400 hover:text-slate-700 p-1 rounded transition-colors"
         aria-label="Close notification"
       >
         <X className="w-4 h-4" />

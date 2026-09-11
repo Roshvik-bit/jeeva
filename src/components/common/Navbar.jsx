@@ -2,14 +2,10 @@ import React from "react";
 import { useEmergency } from "../../context/EmergencyContext";
 import {
   ShieldAlert,
-  Wifi,
-  WifiOff,
   Globe,
   Radio,
   Volume2,
-  Users,
-  LayoutDashboard,
-  Home
+  LayoutDashboard
 } from "lucide-react";
 
 export const Navbar = () => {
@@ -18,7 +14,6 @@ export const Navbar = () => {
     setActivePortal,
     language,
     setLanguage,
-    t,
     isOnline,
     toggleOnlineStatus,
     offlineOutbox,
@@ -36,101 +31,93 @@ export const Navbar = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-        {/* Jeeva Logo Pill */}
+        {/* Brand: JEEVA | Disaster Response Platform */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setActivePortal("landing")}
-            className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition-all group shadow-sm"
+            className="flex items-center gap-2.5 text-left group transition-opacity"
           >
-            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-md shadow-rose-600/30 group-hover:scale-105 transition-transform">
-              <ShieldAlert className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center shadow-sm">
+              <ShieldAlert className="w-5 h-5" />
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-sm sm:text-base tracking-wider text-white font-mono">
+            <div className="flex flex-col">
+              <span className="font-extrabold text-base tracking-tight text-slate-900 leading-none">
                 JEEVA
               </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold hidden sm:inline">
-                RESCUE
+              <span className="text-[11px] text-slate-500 font-medium hidden sm:inline mt-0.5">
+                Disaster Response Platform
               </span>
             </div>
           </button>
         </div>
 
-        {/* Center: Clean Page Links */}
-        <nav className="flex items-center bg-slate-900/80 p-1 rounded-full border border-slate-800/80 shadow-inner">
+        {/* Center: Navigation Links */}
+        <nav className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={() => setActivePortal("citizen")}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
               activePortal === "citizen"
-                ? "bg-rose-600 text-white shadow-md shadow-rose-600/30 font-bold"
-                : "text-slate-400 hover:text-white"
+                ? "bg-blue-50 text-blue-700 font-semibold border border-blue-200"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <Radio className="w-3.5 h-3.5" />
+            <Radio className="w-4 h-4" />
             <span>Citizen App</span>
           </button>
 
           <button
             onClick={() => setActivePortal("dashboard")}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
               activePortal === "dashboard"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
-                : "text-slate-400 hover:text-white"
+                ? "bg-blue-50 text-blue-700 font-semibold border border-blue-200"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
-            <LayoutDashboard className="w-3.5 h-3.5" />
+            <LayoutDashboard className="w-4 h-4" />
             <span>Rescue Dashboard</span>
           </button>
         </nav>
 
-        {/* Right: Connectivity Indicator & Language */}
+        {/* Right: Online Status & Language Selector */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Live Connectivity Pill Indicator ("🟢 Online" / "🔴 Offline") */}
+          {/* Online / Offline Status Button */}
           <button
             onClick={() => toggleOnlineStatus()}
             title={isOnline ? "Click to simulate Offline Mode" : "Click to simulate Online Reconnection"}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border transition-all cursor-pointer shadow-sm ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
               isOnline
-                ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/40 hover:border-emerald-400"
-                : "bg-rose-950/50 border-rose-500/60 text-rose-300 animate-pulse hover:bg-rose-900/50"
+                ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                : "bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
             }`}
           >
-            {isOnline ? (
-              <>
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-                </span>
-                <span>🟢 Online</span>
-              </>
-            ) : (
-              <>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                <span>🔴 Offline</span>
-                {offlineOutbox.length > 0 && (
-                  <span className="ml-0.5 px-1.5 py-0.2 bg-rose-500 text-slate-950 text-[10px] font-black rounded-full">
-                    {offlineOutbox.length}
-                  </span>
-                )}
-              </>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isOnline ? "bg-green-600" : "bg-red-600"
+              }`}
+            />
+            <span>{isOnline ? "Online" : "Offline"}</span>
+            {!isOnline && offlineOutbox.length > 0 && (
+              <span className="ml-1 px-1.5 py-0.2 bg-red-600 text-white text-[10px] font-bold rounded-full">
+                {offlineOutbox.length}
+              </span>
             )}
           </button>
 
           {/* Multilingual Selector */}
           <div className="relative">
             <label htmlFor="language-select" className="sr-only">Select Language</label>
-            <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-300 focus-within:border-slate-600">
-              <Globe className="w-3.5 h-3.5 text-slate-400 mr-1 shrink-0" />
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus-within:border-blue-500">
+              <Globe className="w-3.5 h-3.5 text-slate-400 mr-1.5 shrink-0" />
               <select
                 id="language-select"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
-                className="bg-transparent text-slate-200 text-xs focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-slate-700 text-xs focus:outline-none cursor-pointer pr-1"
               >
                 {languages.map((l) => (
-                  <option key={l.code} value={l.code} className="bg-slate-900 text-slate-200">
+                  <option key={l.code} value={l.code}>
                     {l.label}
                   </option>
                 ))}
@@ -138,11 +125,11 @@ export const Navbar = () => {
             </div>
           </div>
 
-          {/* Siren Audio Test Button */}
+          {/* Audio Alert Test Button */}
           <button
             onClick={() => playEmergencyAudio("siren")}
-            title="Test Emergency Audio Beacon"
-            className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-500/40 transition-colors"
+            title="Test Emergency Alert Sound"
+            className="p-2 rounded-lg border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
             aria-label="Sound Siren"
           >
             <Volume2 className="w-4 h-4" />
@@ -152,3 +139,4 @@ export const Navbar = () => {
     </header>
   );
 };
+

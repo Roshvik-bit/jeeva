@@ -43,22 +43,22 @@ export const SurvivalGuideModal = ({ isOpen, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden my-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden my-6">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/60">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white">Offline Survival & First-Aid Manual</h3>
-              <p className="text-[11px] text-slate-400">Available offline without internet connection</p>
+              <h3 className="text-sm font-bold text-slate-900">Offline Survival & First-Aid Manual</h3>
+              <p className="text-[11px] text-slate-500">Available offline without internet connection</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -67,7 +67,7 @@ export const SurvivalGuideModal = ({ isOpen, onClose }) => {
         <div className="p-4 space-y-4 max-h-[75vh] overflow-y-auto">
           {/* Emergency Helplines */}
           <div>
-            <h4 className="text-xs font-black uppercase tracking-wider text-rose-400 mb-2 flex items-center gap-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-red-600 mb-2 flex items-center gap-1.5">
               <PhoneCall className="w-3.5 h-3.5" />
               <span>National Emergency Toll-Free Helplines</span>
             </h4>
@@ -76,13 +76,13 @@ export const SurvivalGuideModal = ({ isOpen, onClose }) => {
                 <a
                   key={i}
                   href={`tel:${h.number.split(" ")[0]}`}
-                  className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-rose-500/40 transition-colors group"
+                  className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-500 transition-colors group"
                 >
-                  <p className="text-xs font-bold text-white group-hover:text-rose-400 transition-colors">
+                  <p className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
                     {h.title}
                   </p>
-                  <p className="text-sm font-mono font-black text-rose-500 mt-0.5">{h.number}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{h.desc}</p>
+                  <p className="text-sm font-mono font-bold text-red-600 mt-0.5">{h.number}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{h.desc}</p>
                 </a>
               ))}
             </div>
@@ -90,19 +90,19 @@ export const SurvivalGuideModal = ({ isOpen, onClose }) => {
 
           {/* Action Protocols */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase tracking-wider text-indigo-400">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
               Field Action Guidelines
             </h4>
             {guides.map((g, idx) => (
-              <div key={idx} className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/80 space-y-2">
+              <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                 <div className="flex items-center gap-2">
                   {g.icon}
-                  <span className="text-xs font-bold text-slate-200">{g.title}</span>
+                  <span className="text-xs font-bold text-slate-900">{g.title}</span>
                 </div>
                 <ul className="space-y-1.5">
                   {g.steps.map((step, sIdx) => (
-                    <li key={sIdx} className="text-xs text-slate-300 flex items-start gap-2 leading-relaxed">
-                      <span className="text-indigo-400 font-bold">•</span>
+                    <li key={sIdx} className="text-xs text-slate-700 flex items-start gap-2 leading-relaxed">
+                      <span className="text-blue-600 font-bold">•</span>
                       <span>{step}</span>
                     </li>
                   ))}
@@ -112,10 +112,10 @@ export const SurvivalGuideModal = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        <div className="p-3 bg-slate-950/80 border-t border-slate-800 text-center">
+        <div className="p-3 bg-slate-50 border-t border-slate-200 text-center">
           <button
             onClick={onClose}
-            className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl transition-colors"
+            className="w-full py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs rounded-xl transition-colors"
           >
             Close Guide
           </button>

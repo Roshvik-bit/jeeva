@@ -14,7 +14,7 @@ export const FilterSortControls = ({
   setSortBy
 }) => {
   return (
-    <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 space-y-2.5">
+    <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5 shadow-sm">
       {/* Search Input */}
       <div className="relative">
         <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -22,8 +22,8 @@ export const FilterSortControls = ({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by landmark, sector, category, or incident ID..."
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+          placeholder="Search by area, landmark, category, or ID..."
+          className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
         />
       </div>
 
@@ -33,7 +33,7 @@ export const FilterSortControls = ({
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+          className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-blue-600"
         >
           <option value="all">All Categories</option>
           <option value="flood">Flood / Submerged</option>
@@ -48,7 +48,7 @@ export const FilterSortControls = ({
         <select
           value={selectedSeverity}
           onChange={(e) => setSelectedSeverity(e.target.value)}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+          className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-blue-600"
         >
           <option value="all">All Severities</option>
           <option value="Critical">Critical</option>
@@ -61,7 +61,7 @@ export const FilterSortControls = ({
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
+          className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-blue-600"
         >
           <option value="all">All Statuses</option>
           <option value="Pending">Pending Verification</option>
@@ -74,7 +74,7 @@ export const FilterSortControls = ({
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-indigo-300 font-semibold focus:outline-none focus:border-indigo-500"
+          className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-blue-700 font-semibold focus:bg-white focus:outline-none focus:border-blue-600"
         >
           <option value="priority">Sort: Priority Score (High)</option>
           <option value="people">Sort: Most Trapped</option>
