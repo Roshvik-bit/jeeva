@@ -246,6 +246,7 @@ export const EmergencyProvider = ({ children }) => {
           corroboratingReportsCount: 1
         });
 
+        const isOfflineSos = Boolean(report.isQuickSOS || report.isSOS || report.title?.includes("SOS"));
         const newIncident = {
           id: "INC-2026-" + Math.floor(100 + Math.random() * 900),
           title: report.title || `${report.category.toUpperCase()} Distress Alert at ${report.location.address}`,
@@ -254,11 +255,13 @@ export const EmergencyProvider = ({ children }) => {
           status: scored.isFalseAlarm ? "Resolved" : "Pending",
           timestamp: report.timestamp || new Date().toISOString(),
           location: report.location,
-          peopleCount: report.peopleCount || 1,
+          peopleCount: isOfflineSos || report.peopleCount == null ? null : (report.peopleCount || 1),
+          isQuickSOS: isOfflineSos,
+          isSOS: isOfflineSos,
           hasMedicalEmergency: report.hasMedicalEmergency || false,
           medicalDetails: report.medicalDetails || "",
-          description: report.description || "Field emergency alert logged by citizen.",
-          photoUrl: syncedPhotoUrl || report.photoUrl || null,
+          description: report.description || (isOfflineSos ? "Emergency SOS distress beacon logged offline." : "Field emergency alert logged by citizen."),
+          photoUrl: isOfflineSos ? null : (syncedPhotoUrl || report.photoUrl || null),
           aiClassification: aiResult,
           voiceTranscript: report.voiceTranscript || "",
           audioUrl: syncedAudioUrl || activePlayableAudio,
@@ -482,6 +485,7 @@ export const EmergencyProvider = ({ children }) => {
         });
       }
 
+      const isSosReport = Boolean(rawReport.isQuickSOS || rawReport.isSOS || rawReport.title?.includes("SOS"));
       // Save only lightweight text URLs into the incident record (zero base64 strings to prevent 413 errors)
       const newCitizenIncident = {
         id: incidentId,
@@ -491,11 +495,13 @@ export const EmergencyProvider = ({ children }) => {
         status: assignedStatus,
         timestamp,
         location: rawReport.location,
-        peopleCount: rawReport.peopleCount || 1,
+        peopleCount: isSosReport || rawReport.peopleCount == null ? null : (rawReport.peopleCount || 1),
+        isQuickSOS: isSosReport,
+        isSOS: isSosReport,
         hasMedicalEmergency: rawReport.hasMedicalEmergency || false,
         medicalDetails: rawReport.medicalDetails || "",
-        description: rawReport.description || "Field emergency alert logged by citizen.",
-        photoUrl: publicPhotoUrl || rawReport.photoUrl || null,
+        description: rawReport.description || (isSosReport ? "Emergency SOS distress beacon logged by refugee/citizen." : "Field emergency alert logged by citizen."),
+        photoUrl: isSosReport ? null : (publicPhotoUrl || rawReport.photoUrl || null),
         aiClassification: aiResult,
         voiceTranscript: rawReport.voiceTranscript || "",
         audioUrl: publicAudioUrl || activePlayableAudio,
@@ -560,7 +566,8 @@ export const EmergencyProvider = ({ children }) => {
         priorityScore: scored.priorityScore,
         severity: scored.severity,
         isFalseAlarm: scored.isFalseAlarm,
-        photoUrl: publicPhotoUrl || rawReport.photoUrl,
+        peopleCount: isSosReport || rawReport.peopleCount == null ? null : (rawReport.peopleCount || 1),
+        photoUrl: isSosReport ? null : (publicPhotoUrl || rawReport.photoUrl || null),
         audioUrl: publicAudioUrl || activePlayableAudio,
         audioBase64: null,
         timestamp,
@@ -607,17 +614,19 @@ export const EmergencyProvider = ({ children }) => {
     const sosPayload = {
       title: "CRITICAL 1-TAP SOS DISTRESS BEACON",
       category: "flood",
-      peopleCount: 2,
+      peopleCount: null, // Refugee/Citizen SOS beacon: number of people affected is excluded
+      isQuickSOS: true,
+      isSOS: true,
       hasMedicalEmergency: true,
       medicalDetails: "Immediate evacuation requested via 1-Tap Emergency SOS beacon.",
-      description: "Citizen activated high-priority panic beacon. Urgent life safety response required.",
+      description: "Refugee/Citizen activated high-priority panic beacon. Urgent life safety response required.",
       location: {
         lat: coords.lat,
         lng: coords.lng,
         address: address,
         landmark: "GPS Beacon Tag"
       },
-      photoUrl: "https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=800&q=80",
+      photoUrl: null, // No picture attached when refugee/citizen presses SOS button
       voiceTranscript: "AUTOMATIC SOS: User pressed instant emergency distress button."
     };
 

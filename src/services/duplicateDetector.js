@@ -47,23 +47,25 @@ export const duplicateDetector = {
 
       if (distance <= radiusMeters && (isSameCategory || isUltraClose)) {
         // MATCH FOUND: Consolidate!
+        const isIncomingSos = Boolean(incomingReport.isQuickSOS || incomingReport.isSOS || incomingReport.title?.includes("SOS"));
         const existingSubReports = incident.subReports || [];
         const newSubReport = {
           id: "SUB-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
           reportedAt: incomingReport.timestamp || new Date().toISOString(),
-          reporter: incomingReport.reporterName || "Citizen Report",
+          reporter: incomingReport.reporterName || (isIncomingSos ? "Refugee/Citizen SOS Beacon" : "Citizen Report"),
           contact: incomingReport.reporterContact || "Anonymous/Field SOS",
-          peopleCount: incomingReport.peopleCount || 1,
-          note: incomingReport.description || "Corroborating distress call received via JEEVA portal",
-          photoUrl: incomingReport.photoUrl || null
+          peopleCount: isIncomingSos || incomingReport.peopleCount == null ? null : (incomingReport.peopleCount || 1),
+          note: incomingReport.description || (isIncomingSos ? "1-Tap emergency distress beacon activated" : "Corroborating distress call received via JEEVA portal"),
+          photoUrl: isIncomingSos ? null : (incomingReport.photoUrl || null)
         };
 
         const updatedSubReports = [newSubReport, ...existingSubReports];
         const newCorroborationCount = (incident.corroboratingReportsCount || 1) + 1;
-        const updatedPeopleCount = Math.max(
-          incident.peopleCount,
-          incident.peopleCount + Math.floor((incomingReport.peopleCount || 1) * 0.7) // Deduplicated sum accounting for overlapping estimates
-        );
+        let updatedPeopleCount = incident.peopleCount;
+        if (!isIncomingSos && incomingReport.peopleCount != null) {
+          const incCount = incident.peopleCount || 0;
+          updatedPeopleCount = Math.max(incCount, incCount + Math.floor((incomingReport.peopleCount || 1) * 0.7));
+        }
 
         // Recalculate enhanced priority score with new corroboration count & victims
         const candidateForScoring = {

@@ -170,13 +170,22 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
               </p>
             </div>
 
-            {/* Trapped Victims */}
-            <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-              <p className="text-[10px] uppercase font-bold text-slate-500">{t.peopleAffectedLabel || "People Affected"}</p>
-              <p className="text-xl font-bold font-mono text-orange-600 mt-0.5">
-                {incident.peopleCount}
-              </p>
-            </div>
+            {/* Trapped Victims / SOS Signal */}
+            {incident.peopleCount != null && !incident.isQuickSOS && !incident.title?.includes("SOS") ? (
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                <p className="text-[10px] uppercase font-bold text-slate-500">{t.peopleAffectedLabel || "People Affected"}</p>
+                <p className="text-xl font-bold font-mono text-orange-600 mt-0.5">
+                  {incident.peopleCount}
+                </p>
+              </div>
+            ) : (
+              <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-center">
+                <p className="text-[10px] uppercase font-bold text-red-600">Beacon Type</p>
+                <p className="text-sm font-bold font-mono text-red-700 mt-0.5">
+                  1-Tap SOS
+                </p>
+              </div>
+            )}
 
             {/* Corroborations */}
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
@@ -330,11 +339,15 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 font-medium">2. Civilian Isolation</span>
                     <span className="font-bold text-orange-600">
-                      {incident.peopleCount >= 5 ? "Extreme" : incident.peopleCount >= 2 ? "High Risk" : "Moderate"}
+                      {incident.peopleCount != null && !incident.isQuickSOS && !incident.title?.includes("SOS")
+                        ? (incident.peopleCount >= 5 ? "Extreme" : incident.peopleCount >= 2 ? "High Risk" : "Moderate")
+                        : "Urgent SOS Beacon"}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-800 font-semibold leading-tight">
-                    {incident.peopleCount} civilian(s) affected{incident.hasMedicalEmergency ? " • Medical assistance needed" : ""}
+                    {incident.peopleCount != null && !incident.isQuickSOS && !incident.title?.includes("SOS")
+                      ? `${incident.peopleCount} civilian(s) affected${incident.hasMedicalEmergency ? " • Medical assistance needed" : ""}`
+                      : "Emergency panic beacon activated directly by refugee/citizen"}
                   </p>
                   <p className="text-[10px] text-slate-500">
                     {incident.category === "flood" ? "Trapped by rising flood water" : "Extraction priority calculated"}
@@ -561,8 +574,8 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                         </span>
                       </div>
                       <p className="text-slate-600">{sub.note}</p>
-                      <span className="text-[10px] font-mono text-orange-700 font-semibold">
-                        +{sub.peopleCount || 1} trapped reported
+                      <span className="text-[10px] font-bold text-orange-600 font-mono">
+                        {sub.peopleCount != null ? `+${sub.peopleCount} trapped reported` : "1-Tap SOS Beacon"}
                       </span>
                     </div>
                   );

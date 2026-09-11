@@ -234,7 +234,7 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
             📍 ${inc.location?.address || "Disaster Zone"}
           </p>
           <div style="display: flex; gap: 8px; font-size: 11px; color: #475569; margin-bottom: 10px; font-weight: 600;">
-            <span>👥 ${inc.peopleCount} people</span>
+            ${inc.peopleCount != null && !inc.isQuickSOS && !inc.title?.includes("SOS") ? `<span>👥 ${inc.peopleCount} people</span>` : '<span style="color: #dc2626;">🚨 1-Tap SOS Beacon</span>'}
             ${inc.hasMedicalEmergency ? '<span style="color: #dc2626;">🚨 Medical needed</span>' : ""}
           </div>
           <button id="btn-inspect-${inc.id}" style="

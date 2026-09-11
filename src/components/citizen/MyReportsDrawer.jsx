@@ -137,7 +137,11 @@ export const MyReportsDrawer = ({ isOpen, onClose }) => {
 
                   <div className="text-[11px] text-slate-500 font-mono space-y-0.5 pt-2 border-t border-slate-100">
                     <p>📍 {rep.location?.address || "GPS Location Tagged"}</p>
-                    <p>👥 Affected: {rep.peopleCount || 1} person(s)</p>
+                    {rep.peopleCount != null && !rep.isQuickSOS && !rep.title?.includes("SOS") ? (
+                      <p>👥 Affected: {rep.peopleCount} person(s)</p>
+                    ) : (
+                      <p className="text-red-600 font-bold">🚨 1-Tap SOS Distress Beacon</p>
+                    )}
                     {rep.assignedUnit && (
                       <p className="text-blue-700 font-sans font-semibold">
                         🚒 Unit: {rep.assignedUnit}

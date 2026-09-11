@@ -100,11 +100,16 @@ export const calculatePriorityScore = (incident) => {
 
   // 3. People / Victims Danger Weight (Max: 2.5 pts)
   let peopleScore = 0.8;
-  const count = Math.max(1, Number(peopleCount) || 1);
-  if (count >= 20) peopleScore = 2.5;
-  else if (count >= 10) peopleScore = 2.0;
-  else if (count >= 5) peopleScore = 1.6;
-  else if (count >= 2) peopleScore = 1.2;
+  const count = peopleCount != null ? Math.max(1, Number(peopleCount) || 1) : null;
+  if (count == null && (incident.isQuickSOS || incident.isSOS || incident.title?.includes("SOS"))) {
+    // 1-Tap SOS beacon: refugee/citizen panic alert carries immediate high distress baseline
+    peopleScore = 1.6;
+  } else if (count != null) {
+    if (count >= 20) peopleScore = 2.5;
+    else if (count >= 10) peopleScore = 2.0;
+    else if (count >= 5) peopleScore = 1.6;
+    else if (count >= 2) peopleScore = 1.2;
+  }
 
   // 4. AI Hazard Severity Weight (Max: 1.5 pts)
   const rawAiSeverity = aiClassification?.hazardSeverity != null
@@ -114,15 +119,19 @@ export const calculatePriorityScore = (incident) => {
 
   // 5. Absolute Emergency Multiplier / Bonus (Max: 1.5 pts)
   // Triggered when multiple life-critical conditions coincide:
+  // - 1-Tap SOS Beacon Broadcast
   // - Trapped victims >= 5
   // - Natural disaster or Fire combined with active Medical Emergency
   // - Massive casualty footprint (count >= 15)
   // - Explicit absolute emergency flag from triage AI
   const isAbsolute = Boolean(
     isAbsoluteEmergency ||
+    incident.isQuickSOS ||
+    incident.isSOS ||
+    incident.title?.includes("SOS") ||
     (hasMedicalEmergency && (isNaturalDisaster || isFireEmergency || isTrappedEmergency)) ||
-    (isTrappedEmergency && count >= 5) ||
-    (count >= 15 && isNaturalDisaster) ||
+    (peopleCount != null && isTrappedEmergency && Number(peopleCount) >= 5) ||
+    (peopleCount != null && Number(peopleCount) >= 15 && isNaturalDisaster) ||
     aiClassification?.urgencyAssessment === "CRITICAL_IMMEDIATE_ACTION" ||
     aiClassification?.urgencyAssessment === "LIFE_THREATENING_MEDICAL"
   );
@@ -159,7 +168,7 @@ export const calculatePriorityScore = (incident) => {
 
   const explanation = `Score ${priorityScore}/10 [${severity}]: Category ${category} (${categoryScore} pts) + ${
     hasMedicalEmergency ? "Medical Distress (2.5 pts)" : "No Medical (0 pts)"
-  } + Victims ${count} (${peopleScore} pts) + AI Hazard (${aiHazardScore} pts)${
+  } + ${count != null ? `Victims ${count} (${peopleScore} pts)` : `1-Tap SOS Beacon (${peopleScore} pts)`} + AI Hazard (${aiHazardScore} pts)${
     absoluteEmergencyBonus > 0 ? ` + Absolute Emergency (+${absoluteEmergencyBonus} pts)` : ""
   } + Recency/Cluster (${(recencyScore + corroborationScore).toFixed(1)} pts)`;
 

@@ -37,6 +37,13 @@ export const dataUrlToBlob = (dataUrl, fallbackMime = "application/octet-stream"
 export const mapRowToIncident = (row) => {
   if (!row) return null;
   const audioData = row.audio_url || null;
+  const isSos = Boolean(
+    row.title?.includes("SOS") ||
+    row.voice_transcript?.includes("SOS") ||
+    row.description?.includes("SOS") ||
+    row.is_sos
+  );
+
   return {
     id: row.id,
     title: row.title,
@@ -44,12 +51,14 @@ export const mapRowToIncident = (row) => {
     severity: row.severity,
     status: row.status || "Pending",
     priorityScore: row.priority_score != null ? Number(row.priority_score) : 5.0,
-    peopleCount: row.people_count || 1,
+    peopleCount: isSos || row.people_count == null ? null : (row.people_count || 1),
+    isQuickSOS: isSos,
+    isSOS: isSos,
     hasMedicalEmergency: Boolean(row.has_medical),
     medicalDetails: row.medical_details || "",
     description: row.description || "",
     location: row.location || { address: "Unknown Location", lat: 13.0827, lng: 80.2707 },
-    photoUrl: row.photo_url || null,
+    photoUrl: isSos ? null : (row.photo_url || null),
     audioUrl: audioData,
     audioBase64: audioData && audioData.startsWith("data:audio") ? audioData : null,
     voiceTranscript: row.voice_transcript || "",
@@ -67,9 +76,17 @@ export const mapRowToIncident = (row) => {
  * Ensures audio_url and photo_url are always clean URLs under 1024 characters
  */
 export const mapIncidentToRow = (incident) => {
+  const isSos = Boolean(
+    incident.isQuickSOS ||
+    incident.isSOS ||
+    incident.title?.includes("SOS") ||
+    incident.voiceTranscript?.includes("SOS")
+  );
+
   // Only accept clean HTTP/HTTPS URLs under 1024 characters for database columns
   let cleanPhotoUrl = null;
   if (
+    !isSos &&
     incident.photoUrl &&
     typeof incident.photoUrl === "string" &&
     (incident.photoUrl.startsWith("http://") || incident.photoUrl.startsWith("https://")) &&
@@ -95,7 +112,7 @@ export const mapIncidentToRow = (incident) => {
     severity: incident.severity,
     status: incident.status || "Pending",
     priority_score: incident.priorityScore,
-    people_count: incident.peopleCount || 1,
+    people_count: isSos || incident.peopleCount == null ? null : (incident.peopleCount || 1),
     has_medical: Boolean(incident.hasMedicalEmergency),
     medical_details: incident.medicalDetails || "",
     description: incident.description || "",

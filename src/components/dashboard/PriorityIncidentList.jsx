@@ -139,10 +139,18 @@ export const PriorityIncidentList = ({
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5 font-medium text-slate-800">
-                <Users className="w-3.5 h-3.5 text-slate-500" />
-                <span>{incident.peopleCount} {t.peopleAffectedLabel || "people affected"}</span>
-              </div>
+              {/* People Affected Count - Excluded for Refugee/Citizen SOS Beacons */}
+              {incident.peopleCount != null && !incident.isQuickSOS && !incident.title?.includes("SOS") ? (
+                <div className="flex items-center gap-1.5 font-medium text-slate-800">
+                  <Users className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{incident.peopleCount} {t.peopleAffectedLabel || "people affected"}</span>
+                </div>
+              ) : (incident.isQuickSOS || incident.isSOS || incident.title?.includes("SOS")) ? (
+                <div className="flex items-center gap-1.5 font-bold text-red-600">
+                  <AlertOctagon className="w-3.5 h-3.5 text-red-600 animate-pulse" />
+                  <span>1-Tap SOS Distress Beacon</span>
+                </div>
+              ) : null}
 
               {incident.hasMedicalEmergency && !incident.isFalseAlarm && (
                 <div className="flex items-center gap-1.5 font-semibold text-red-600">
