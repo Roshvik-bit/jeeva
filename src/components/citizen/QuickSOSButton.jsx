@@ -25,7 +25,7 @@ export const QuickSOSButton = () => {
     playEmergencyAudio("beep");
     // Pre-buffer audio on direct user touch/click gesture so playback is instantaneous
     try {
-      const primer = new Audio("/sounds/sos-alarm.mp3");
+      const primer = new Audio("/sounds/android-emergency-alert-tone_cLPHXHO9.mp3");
       primer.preload = "auto";
       primer.load();
     } catch (_) {}
@@ -49,57 +49,24 @@ export const QuickSOSButton = () => {
   return (
     <div className="flex flex-col items-center justify-center p-4">
       {countdown !== null ? (
-        // Countdown Failsafe State (3 -> 2 -> 1)
-        <div className="w-full max-w-sm bg-white border-2 border-red-600 rounded-2xl p-6 shadow-xl text-center">
-          {/* Central Pulsing Number */}
-          <div className="flex justify-center mb-4">
-            <div className="relative w-20 h-20 flex items-center justify-center">
-              <span className="absolute inset-0 rounded-full border-4 border-red-200 animate-ping pointer-events-none" />
+        // Countdown Failsafe State (3 -> 2 -> 1) with Blinking Light (No Step Badges or Extra Text)
+        <div className="w-full max-w-sm bg-white border-2 border-red-600 rounded-2xl p-6 shadow-xl text-center flex flex-col items-center">
+          {/* Central Pulsing / Blinking Light with Countdown Number */}
+          <div className="flex justify-center my-3">
+            <div className="relative w-24 h-24 flex items-center justify-center">
+              <span className="absolute inset-0 rounded-full border-4 border-red-400 animate-ping opacity-75 pointer-events-none" />
+              <span className="absolute -inset-2 rounded-full border-2 border-red-300 animate-pulse pointer-events-none" />
               <div
                 key={countdown}
-                className="relative w-16 h-16 rounded-full bg-red-600 border-2 border-white flex items-center justify-center text-white text-3xl font-black font-mono shadow-md animate-count-pop"
+                className="relative w-20 h-20 rounded-full bg-red-600 border-4 border-white flex items-center justify-center text-white text-3xl font-black font-mono shadow-lg animate-count-pop"
               >
                 {countdown}
               </div>
             </div>
           </div>
 
-          {/* Sequential Step Badges: 3 -> 2 -> 1 */}
-          <div className="flex items-center justify-center gap-2 mb-3">
-            {[3, 2, 1].map((step) => {
-              const isActive = countdown === step;
-              const isPast = countdown < step;
-              return (
-                <div
-                  key={step}
-                  className={`px-3 py-1 rounded-lg font-mono text-xs font-bold transition-all duration-300 flex items-center gap-1.5 ${
-                    isActive
-                      ? "bg-red-600 text-white shadow-sm"
-                      : isPast
-                      ? "bg-red-50 text-red-500 border border-red-200"
-                      : "bg-slate-100 text-slate-500 border border-slate-200"
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isActive ? "bg-white animate-pulse" : isPast ? "bg-red-400" : "bg-slate-400"
-                    }`}
-                  />
-                  <span>Step {step}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-            {t.sendingAlert || "Sending Emergency Alert"}
-          </h3>
-          <p className="text-xs text-slate-600 mt-1 mb-4">
-            {t.sosCancelWarning || "Sending Emergency Alert! Tap Cancel within 3 seconds if accidental"}
-          </p>
-
           {/* Countdown Progress Bar */}
-          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden mb-5 border border-slate-200">
+          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden my-4 border border-slate-200">
             <div
               className="h-full bg-red-600 transition-all duration-1000 ease-linear rounded-full"
               style={{ width: `${(countdown / 3) * 100}%` }}

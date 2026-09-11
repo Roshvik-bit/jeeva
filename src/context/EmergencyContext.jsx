@@ -107,16 +107,16 @@ export const EmergencyProvider = ({ children }) => {
     } catch (_) {}
   };
 
-  // Preload SOS alarm audio from /sounds/sos-alarm.mp3
+  // Preload newly uploaded SOS alarm audio
   useEffect(() => {
     try {
-      const audio = new Audio("/sounds/sos-alarm.mp3");
+      const audio = new Audio("/sounds/android-emergency-alert-tone_cLPHXHO9.mp3");
       audio.preload = "auto";
       audio.load();
     } catch (_) {}
   }, []);
 
-  // Audio Siren generator using the Android Emergency Alert MP3 from /sounds/ with synth fallback
+  // Audio Siren generator using the newly uploaded Android Emergency Alert MP3 with synth fallback
   const playEmergencyAudio = useCallback((toneType = "siren") => {
     try {
       if (toneType === "siren") {
@@ -125,7 +125,7 @@ export const EmergencyProvider = ({ children }) => {
           activeSirenAudioRef.current &&
           !activeSirenAudioRef.current.paused &&
           activeSirenAudioRef.current.currentTime > 0 &&
-          activeSirenAudioRef.current.currentTime < 8
+          activeSirenAudioRef.current.currentTime < 5
         ) {
           return;
         }
@@ -138,8 +138,8 @@ export const EmergencyProvider = ({ children }) => {
           } catch (_) {}
         }
 
-        // Play the Android Emergency Alert Tone from /sounds/sos-alarm.mp3
-        const audio = new Audio("/sounds/sos-alarm.mp3");
+        // Play the newly uploaded Android Emergency Alert Tone
+        const audio = new Audio("/sounds/android-emergency-alert-tone_cLPHXHO9.mp3");
         audio.volume = 0.95;
         activeSirenAudioRef.current = audio;
 
