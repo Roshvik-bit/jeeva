@@ -22,30 +22,43 @@ export const calculatePriorityScore = (incident) => {
     isAbsoluteEmergency = false
   } = incident;
 
-  // 0. False Alarm / Fake Report Check: Deprioritize completely to 0.0
-  const isFalseAlarm = Boolean(
+  // 0. Image / Statement Disaster Verification Check
+  const isInvalidOrFalse = Boolean(
     aiClassification?.isFalseAlarm ||
     aiClassification?.isValidDisaster === false ||
     aiClassification?.isFakeReport ||
+    aiClassification?.isInvalidImage ||
     aiClassification?.urgencyAssessment === "FALSE_ALARM_DISMISSED"
   );
 
-  if (isFalseAlarm) {
-    const reason = aiClassification?.verificationReason || "Flagged as false alarm or non-emergency submission.";
+  if (isInvalidOrFalse) {
+    const isRequiresReview = Boolean(
+      aiClassification?.status === "REQUIRES_REVIEW" ||
+      (aiClassification?.isInvalidImage && aiClassification?.hasGenuineText)
+    );
+    const assignedScore = isRequiresReview ? 1.0 : 0.0;
+    const assignedStatus = isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED";
+    const assignedSeverity = isRequiresReview ? "Requires Review" : "False Alarm";
+    const reason = aiClassification?.verificationReason ||
+      "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.";
+
     return {
-      priorityScore: 0.0,
-      severity: "False Alarm",
-      isFalseAlarm: true,
+      priorityScore: assignedScore,
+      severity: assignedSeverity,
+      status: assignedStatus,
+      isFalseAlarm: !isRequiresReview,
+      isRequiresReview,
+      isInvalidImage: Boolean(aiClassification?.isInvalidImage),
       isRealReport: false,
       scoreBreakdown: {
         peopleScore: 0,
         medicalScore: 0,
-        categoryScore: 0,
+        categoryScore: isRequiresReview ? 1.0 : 0,
         aiHazardScore: 0,
         absoluteEmergencyBonus: 0,
         recencyScore: 0,
         corroborationScore: 0,
-        explanation: `⚠️ Flagged as False Alarm / Fake Report (Priority Score: 0.0/10). Reason: ${reason} Deprioritized to bottom of queue.`
+        explanation: `⚠️ Image Verification Notice (Score: ${assignedScore}/10, Status: ${assignedStatus}). Reason: ${reason}`
       }
     };
   }
@@ -153,6 +166,7 @@ export const calculatePriorityScore = (incident) => {
   return {
     priorityScore,
     severity,
+    status: "Pending",
     isFalseAlarm: false,
     isRealReport: true,
     isNaturalDisaster,

@@ -190,44 +190,56 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <p className="text-[10px] uppercase font-bold text-slate-500">{t.statusLabel || "Status"}</p>
               <p className={`text-xs font-bold font-mono mt-1.5 uppercase ${
-                incident.isFalseAlarm ? "text-amber-700" : "text-blue-700"
+                incident.status === "REJECTED" || incident.isFalseAlarm ? "text-amber-800" : incident.status === "REQUIRES_REVIEW" ? "text-blue-800" : "text-blue-700"
               }`}>
-                {incident.isFalseAlarm ? "False Alarm" : incident.status === "Resolved" ? (t.statusResolved || "Resolved") : incident.status}
+                {incident.status || (incident.isFalseAlarm ? "REJECTED" : "Pending")}
               </p>
             </div>
           </div>
 
           {/* AI-Assisted Incident Analysis Panel */}
-          {incident.isFalseAlarm || incident.severity === "False Alarm" ? (
-            <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-300 space-y-3">
+          {incident.isFalseAlarm || incident.severity === "False Alarm" || incident.status === "REJECTED" || incident.status === "REQUIRES_REVIEW" || incident.isInvalidImage || incident.priorityScore <= 1.0 ? (
+            <div className={`p-4 rounded-xl border-2 space-y-3 ${
+              incident.status === "REQUIRES_REVIEW"
+                ? "bg-blue-50 border-blue-300"
+                : "bg-amber-50 border-amber-300"
+            }`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center font-bold">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${
+                    incident.status === "REQUIRES_REVIEW" ? "bg-blue-200 text-blue-900" : "bg-amber-200 text-amber-900"
+                  }`}>
                     ⚠️
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-950">
-                      AI Authenticity: False Alarm / Fake Report
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                      {incident.status === "REQUIRES_REVIEW"
+                        ? "AI Verification: Requires Operational Review"
+                        : "AI Verification: False Alarm / Rejected Photo"}
                     </h4>
-                    <p className="text-[11px] text-amber-800">
-                      Automated statement & visual triage classified as non-emergency
+                    <p className="text-[11px] text-slate-700">
+                      {incident.isInvalidImage
+                        ? "Uploaded photo failed disaster emergency context validation"
+                        : "Automated statement & visual triage classified as non-emergency"}
                     </p>
                   </div>
                 </div>
-                <div className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 font-mono font-bold text-slate-800 text-sm">
-                  Priority: 0.0/10
+                <div className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 font-mono font-bold text-slate-800 text-sm">
+                  Priority: {incident.priorityScore ?? 0}/10
                 </div>
               </div>
 
-              <div className="p-3 bg-white/90 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
+              <div className="p-3 bg-white/90 rounded-lg border border-slate-200 text-xs text-slate-900 space-y-1">
                 <span className="font-bold block">Verification Analysis:</span>
                 <p className="leading-relaxed">
-                  {incident.verificationReason || incident.aiClassification?.verificationReason || "AI analysis classified statement/image as a false alarm or non-hazard situation."}
+                  {incident.verificationReason || incident.aiClassification?.verificationReason || "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description."}
                 </p>
               </div>
 
-              <p className="text-[11px] text-amber-800 italic">
-                Note: Priority score is strictly 0.0/10. Dispatching rescue units to this report is suppressed to protect frontline response availability.
+              <p className="text-[11px] text-slate-600 italic">
+                {incident.status === "REQUIRES_REVIEW"
+                  ? "Note: Priority score is restricted to 1.0/10 pending manual dispatcher verification of citizen report."
+                  : "Note: Priority score is assigned 0.0/10. Dispatching rescue units to this report is suppressed to protect frontline response availability."}
               </p>
             </div>
           ) : (

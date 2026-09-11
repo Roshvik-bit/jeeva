@@ -419,7 +419,7 @@ export const EmergencyProvider = ({ children }) => {
 
       // Online: Real-time multi-modal AI verification (statement + photo)
       let aiResult = rawReport.aiClassification;
-      if (!aiResult || aiResult.isFalseAlarm === undefined) {
+      if (!aiResult || aiResult.isFalseAlarm === undefined || aiResult.isInvalidImage === undefined) {
         aiResult = await mockAiClassifier.verifyReport({
           title: rawReport.title,
           description: rawReport.description,
@@ -427,7 +427,9 @@ export const EmergencyProvider = ({ children }) => {
           category: rawReport.category,
           hasMedicalEmergency: rawReport.hasMedicalEmergency,
           peopleCount: rawReport.peopleCount,
-          photoUrl: rawReport.photoUrl
+          photoUrl: rawReport.photoUrl,
+          fileName: rawReport.fileName || "",
+          imageMetadata: rawReport.imageMetadata || {}
         });
       }
 
@@ -470,13 +472,23 @@ export const EmergencyProvider = ({ children }) => {
         corroboratingReportsCount: 1
       });
 
+      const assignedStatus = scored.status || (scored.isFalseAlarm ? "REJECTED" : "Pending");
+
+      if (scored.isInvalidImage || aiResult?.isInvalidImage) {
+        addToast({
+          type: "warning",
+          title: "Image Verification Alert",
+          message: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description."
+        });
+      }
+
       // Save only lightweight text URLs into the incident record (zero base64 strings to prevent 413 errors)
       const newCitizenIncident = {
         id: incidentId,
         title: rawReport.title || `${rawReport.category.toUpperCase()} Crisis at ${rawReport.location.address}`,
         category: rawReport.category,
         severity: scored.severity,
-        status: scored.isFalseAlarm ? "Resolved" : "Pending",
+        status: assignedStatus,
         timestamp,
         location: rawReport.location,
         peopleCount: rawReport.peopleCount || 1,
@@ -492,6 +504,8 @@ export const EmergencyProvider = ({ children }) => {
         assignedUnit: null,
         priorityScore: scored.priorityScore,
         isFalseAlarm: scored.isFalseAlarm,
+        isRequiresReview: scored.isRequiresReview,
+        isInvalidImage: Boolean(scored.isInvalidImage || aiResult?.isInvalidImage),
         isRealReport: scored.isRealReport,
         isAbsoluteEmergency: scored.isAbsoluteEmergency,
         disasterTypeTags: scored.disasterTypeTags || [],

@@ -264,6 +264,7 @@ const analyzeImagePixels = (dataUrl) => {
         let skinToneCount = 0;
         let waterColorCount = 0;
         let fireColorCount = 0;
+        let debrisColorCount = 0;
         const brightnessArray = [];
 
         for (let i = 0; i < data.length; i += 4) {
@@ -274,19 +275,27 @@ const analyzeImagePixels = (dataUrl) => {
           totalBrightness += brightness;
           brightnessArray.push(brightness);
 
-          // Skin tone check (selfie / face detection)
+          // 1. Skin tone check (selfie / portrait / human face detection)
           if (r > 95 && g > 40 && b > 20 && Math.max(r, g, b) - Math.min(r, g, b) > 15 && Math.abs(r - g) > 15 && r > g && r > b) {
             skinToneCount++;
           }
 
-          // Flood / water detection (muddy/brown or blue/cyan/grey high reflective spectrum)
-          if ((b > r && b > g && b > 70) || (r > 70 && g > 60 && b < 60 && Math.abs(r - g) < 25) || (Math.abs(r - g) < 15 && Math.abs(g - b) < 15 && brightness > 50 && brightness < 180)) {
+          // 2. Flood / water detection (muddy silt river water or blue/cyan/grey reflective water)
+          const isBlueWater = b > r && b > g && b > 65 && (b - r) > 15;
+          const isMuddyWater = r > 65 && g > 55 && b < 65 && Math.abs(r - g) < 25 && (r + g) > (2 * b + 25);
+          const isWaterReflection = Math.abs(r - g) < 12 && Math.abs(g - b) < 12 && brightness > 45 && brightness < 185;
+          if (isBlueWater || isMuddyWater || isWaterReflection) {
             waterColorCount++;
           }
 
-          // Fire / flame detection (bright yellow, orange, red)
-          if (r > 180 && g > 90 && b < 100 && (r - b) > 80) {
+          // 3. Fire / flame detection (bright yellow, orange, intense fire red)
+          if (r > 175 && g > 75 && b < 100 && (r - b) > 75) {
             fireColorCount++;
+          }
+
+          // 4. Debris / concrete / structural damage / dark soil
+          if (r > 35 && r < 145 && g > 35 && g < 145 && b > 35 && b < 145 && Math.abs(r - g) < 15 && Math.abs(g - b) < 15) {
+            debrisColorCount++;
           }
         }
 
@@ -299,13 +308,15 @@ const analyzeImagePixels = (dataUrl) => {
         const skinRatio = skinToneCount / totalPixels;
         const waterRatio = waterColorCount / totalPixels;
         const fireRatio = fireColorCount / totalPixels;
+        const debrisRatio = debrisColorCount / totalPixels;
 
         resolve({
           avgBrightness,
           stdDev,
           skinRatio,
           waterRatio,
-          fireRatio
+          fireRatio,
+          debrisRatio
         });
       } catch (err) {
         resolve(null);
@@ -314,6 +325,86 @@ const analyzeImagePixels = (dataUrl) => {
     img.onerror = () => resolve(null);
     img.src = dataUrl;
   });
+};
+
+/**
+ * Validates image context against disaster hazards (floods, fires, structural damage, blocked roads)
+ * Accurately catches random objects, selfies, food, pets, and non-emergency scenes
+ */
+export const validateImageDisasterContext = (pixelStats, { category = "flood", fileName = "", sampleId = "" } = {}) => {
+  const normalizedName = (fileName || "").replace(/[_\-.]/g, " ").toLowerCase();
+  const nonDisasterKeywords = /\b(selfie|portrait|face|person|cat|cats|dog|dogs|puppy|kitten|pet|pets|coffee|cup|mug|tea|chai|food|pizza|burger|sandwich|snack|dish|plate|meal|lunch|dinner|breakfast|desk|laptop|computer|keyboard|mouse|room|bedroom|livingroom|office|table|chair|bed|wall|furniture|car\s*wash|parking|mall|store|shop|screenshot|screen\s*shot|meme|funny|game|wallpaper|document|receipt|invoice|bill|avatar|profile)\b/i;
+  
+  if (normalizedName && nonDisasterKeywords.test(normalizedName)) {
+    return {
+      isValidDisaster: false,
+      isInvalidImage: true,
+      reason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+      detectedHazard: "Non-Emergency Photo (Everyday Item / Domestic Scene)"
+    };
+  }
+
+  if (sampleId && (sampleId.includes("coffee") || sampleId.includes("pet") || sampleId.includes("false-alarm"))) {
+    return {
+      isValidDisaster: false,
+      isInvalidImage: true,
+      reason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+      detectedHazard: "Non-Emergency Photo (False Alarm Sample)"
+    };
+  }
+
+  if (pixelStats) {
+    // Blank, totally dark lens, or washed out white
+    if (pixelStats.stdDev < 12 || pixelStats.avgBrightness < 16 || pixelStats.avgBrightness > 240) {
+      return {
+        isValidDisaster: false,
+        isInvalidImage: true,
+        reason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+        detectedHazard: "Blank or Obstructed Frame"
+      };
+    }
+
+    // Selfie / Personal portrait (human face close up)
+    if (pixelStats.skinRatio > 0.18) {
+      return {
+        isValidDisaster: false,
+        isInvalidImage: true,
+        reason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+        detectedHazard: "Personal Portrait / Selfie"
+      };
+    }
+
+    // Everyday indoor flat surface (table, desk, room wall, screen)
+    if (pixelStats.waterRatio < 0.10 && pixelStats.fireRatio < 0.035 && (pixelStats.debrisRatio || 0) < 0.12 && pixelStats.stdDev < 32) {
+      return {
+        isValidDisaster: false,
+        isInvalidImage: true,
+        reason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+        detectedHazard: "Indoor Surface / Everyday Domestic Scene"
+      };
+    }
+
+    // Verify presence of at least one real disaster signature
+    const hasFloodSignature = pixelStats.waterRatio >= 0.12;
+    const hasFireSignature = pixelStats.fireRatio >= 0.035;
+    const hasDebrisSignature = (pixelStats.debrisRatio || 0) >= 0.12 && pixelStats.stdDev >= 30;
+
+    if (!hasFloodSignature && !hasFireSignature && !hasDebrisSignature) {
+      return {
+        isValidDisaster: false,
+        isInvalidImage: true,
+        reason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+        detectedHazard: "Non-Disaster Photo (No Hazard Signatures)"
+      };
+    }
+  }
+
+  return {
+    isValidDisaster: true,
+    isInvalidImage: false,
+    reason: "Disaster visual features authenticated.",
+    detectedHazard: "Disaster Hazard Verified"
+  };
 };
 
 /**
@@ -328,7 +419,9 @@ export const verifyDisasterReport = async ({
   category = "flood",
   hasMedicalEmergency = false,
   peopleCount = 1,
-  photoUrl = null
+  photoUrl = null,
+  fileName = "",
+  imageMetadata = {}
 }) => {
   // 1. Text & Statement Verification
   const combinedText = [title, description, voiceTranscript].filter(Boolean).join(" ");
@@ -340,7 +433,9 @@ export const verifyDisasterReport = async ({
       isFalseAlarm: true,
       isFakeReport: true,
       isRealReport: false,
-      verificationStatus: "FLAGGED_FAKE_REPORT",
+      status: "REJECTED",
+      priorityScore: 0.0,
+      verificationStatus: "REJECTED",
       verificationReason: statementCheck.reason,
       detectedHazard: "No Real Hazard Detected — Statement Flagged as Fake / False Alarm",
       hazardSeverity: 0.0,
@@ -353,12 +448,38 @@ export const verifyDisasterReport = async ({
 
   // 2. Photo / Image Verification (if photo is attached)
   if (photoUrl) {
+    const resolvedFileName = fileName || imageMetadata.fileName || imageMetadata.name || "";
+    const resolvedSampleId = imageMetadata.sampleId || (typeof photoUrl === "string" ? photoUrl : "");
+
     // Check preset disaster & false alarm samples first
     const matchingSample = SAMPLE_DISASTER_IMAGES.find(
-      (s) => s.url === photoUrl || s.id === photoUrl || s.hazard === photoUrl
+      (s) => s.url === photoUrl || s.id === photoUrl || s.hazard === photoUrl || s.id === resolvedSampleId
     );
 
     if (matchingSample) {
+      if (matchingSample.isFalseAlarm) {
+        const isRequiresReview = Boolean(statementCheck.isRealEmergency);
+        return {
+          ...matchingSample,
+          detectedHazard: matchingSample.hazard,
+          hazardSeverity: 0.0,
+          confidence: matchingSample.confidence,
+          visualTags: matchingSample.visualTags,
+          recommendedResource: "None",
+          urgencyAssessment: "FALSE_ALARM_DISMISSED",
+          isValidDisaster: false,
+          isFalseAlarm: !isRequiresReview,
+          isInvalidImage: true,
+          isFakeReport: !isRequiresReview,
+          isRealReport: false,
+          status: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
+          priorityScore: isRequiresReview ? 1.0 : 0.0,
+          verificationStatus: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
+          verificationReason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+          hasGenuineText: isRequiresReview
+        };
+      }
+
       return {
         detectedHazard: matchingSample.hazard,
         hazardSeverity: matchingSample.severity,
@@ -366,12 +487,39 @@ export const verifyDisasterReport = async ({
         visualTags: matchingSample.visualTags,
         recommendedResource: matchingSample.resource,
         urgencyAssessment: matchingSample.urgency,
-        isValidDisaster: matchingSample.isValidDisaster,
-        isFalseAlarm: matchingSample.isFalseAlarm,
-        isFakeReport: matchingSample.isFalseAlarm,
-        isRealReport: !matchingSample.isFalseAlarm,
-        verificationStatus: matchingSample.isFalseAlarm ? "FLAGGED_FALSE_ALARM" : "VERIFIED_REAL_EMERGENCY",
-        verificationReason: matchingSample.verificationReason
+        isValidDisaster: true,
+        isFalseAlarm: false,
+        isInvalidImage: false,
+        isFakeReport: false,
+        isRealReport: true,
+        status: "Pending",
+        verificationStatus: "VERIFIED_REAL_EMERGENCY",
+        verificationReason: matchingSample.verificationReason,
+        hasGenuineText: statementCheck.isRealEmergency
+      };
+    }
+
+    // Check filename / metadata for non-disaster objects before vision analysis
+    const nameCheck = validateImageDisasterContext(null, { category, fileName: resolvedFileName, sampleId: resolvedSampleId });
+    if (!nameCheck.isValidDisaster) {
+      const isRequiresReview = Boolean(statementCheck.isRealEmergency);
+      return {
+        detectedHazard: nameCheck.detectedHazard,
+        hazardSeverity: 0.0,
+        confidence: 97.0,
+        visualTags: ["Invalid Image", "Non-Disaster Item", isRequiresReview ? "Requires Review" : "Rejected"],
+        recommendedResource: "None",
+        urgencyAssessment: "FALSE_ALARM_DISMISSED",
+        isValidDisaster: false,
+        isFalseAlarm: !isRequiresReview,
+        isInvalidImage: true,
+        isFakeReport: !isRequiresReview,
+        isRealReport: false,
+        status: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
+        priorityScore: isRequiresReview ? 1.0 : 0.0,
+        verificationStatus: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
+        verificationReason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+        hasGenuineText: isRequiresReview
       };
     }
 
@@ -414,20 +562,19 @@ Statement: "${combinedText || 'No statement'}"
 Category: ${category}
 Photo: [Attached Image]
 
-Determine whether this is a GENUINE DISASTER/EMERGENCY or a FAKE REPORT / FALSE ALARM.
-Genuine emergencies: floodwaters, active fire/smoke, structural collapse, debris, visible injuries, trapped victims.
-Fake reports / false alarms: jokes, pranks, selfies, domestic pets, food/beverages, clean rooms, normal streets, memes.
+Determine whether this image depicts an authentic disaster emergency (active floodwaters, rising water, structural collapse, fire, heavy smoke, landslide debris, vehicle entrapment, injured victims) OR if it depicts a non-emergency scene (selfie, domestic pet, food, beverage, coffee cup, indoor room, office desk, screenshot, meme, or everyday objects).
 
 Return ONLY a valid JSON object:
 {
   "isValidDisaster": true or false,
+  "isInvalidImage": true or false,
   "isFalseAlarm": true or false,
-  "verificationReason": "Detailed 1-sentence reason explaining genuine emergency vs false alarm",
-  "detectedHazard": "Specific hazard or 'No Hazard Detected - False Alarm'",
-  "hazardSeverity": float between 0.0 and 10.0 (strictly 0.0 if false alarm),
+  "verificationReason": "Detailed 1-sentence reason explaining genuine emergency vs non-disaster photo",
+  "detectedHazard": "Specific disaster hazard or 'No Hazard Detected - Non-Emergency Photo'",
+  "hazardSeverity": float between 0.0 and 10.0 (strictly 0.0 if not a disaster),
   "confidence": float between 80.0 and 99.9,
   "visualTags": ["3-5 observation tags"],
-  "recommendedResource": "Rescue Boat" | "Road Clearance Unit" | "Medical Team" | "Fire Tender" | "None (False Alarm)",
+  "recommendedResource": "Rescue Boat" | "Road Clearance Unit" | "Medical Team" | "Fire Tender" | "None",
   "urgencyAssessment": "CRITICAL_IMMEDIATE_ACTION" | "HIGH_HAZARD" | "MONITOR" | "FALSE_ALARM_DISMISSED"
 }`;
 
@@ -455,21 +602,48 @@ Return ONLY a valid JSON object:
             if (textResponse) {
               const cleaned = textResponse.replace(/```json|```/g, "").trim();
               const parsed = JSON.parse(cleaned);
-              const isFalse = Boolean(parsed.isFalseAlarm || parsed.isValidDisaster === false);
+              const isInvalid = Boolean(parsed.isInvalidImage || parsed.isValidDisaster === false || parsed.isFalseAlarm);
+
+              if (isInvalid) {
+                const isRequiresReview = Boolean(statementCheck.isRealEmergency);
+                return {
+                  detectedHazard: parsed.detectedHazard || "Non-Emergency Photo Detected (Random Object / Scene)",
+                  hazardSeverity: 0.0,
+                  confidence: Number(parsed.confidence) || 96.0,
+                  visualTags: parsed.visualTags || ["Invalid Image", "No Disaster Features"],
+                  recommendedResource: "None",
+                  urgencyAssessment: "FALSE_ALARM_DISMISSED",
+                  isValidDisaster: false,
+                  isFalseAlarm: !isRequiresReview,
+                  isInvalidImage: true,
+                  isFakeReport: !isRequiresReview,
+                  isRealReport: false,
+                  status: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
+                  priorityScore: isRequiresReview ? 1.0 : 0.0,
+                  verificationStatus: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
+                  verificationReason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+                  isLiveAi: true,
+                  hasGenuineText: isRequiresReview
+                };
+              }
+
               return {
-                detectedHazard: parsed.detectedHazard || (isFalse ? "No Active Hazard (False Alarm)" : "Disaster Hazard Verified"),
-                hazardSeverity: isFalse ? 0.0 : (Number(parsed.hazardSeverity) || 9.0),
+                detectedHazard: parsed.detectedHazard || "Disaster Hazard Verified",
+                hazardSeverity: Number(parsed.hazardSeverity) || 9.0,
                 confidence: Number(parsed.confidence) || 96.0,
-                visualTags: parsed.visualTags || (isFalse ? ["False Alarm", "Non-Hazard Scene"] : ["Disaster Impact", "Rescue Needed"]),
-                recommendedResource: isFalse ? "None (False Alarm)" : (parsed.recommendedResource || "Rescue Boat"),
-                urgencyAssessment: isFalse ? "FALSE_ALARM_DISMISSED" : (parsed.urgencyAssessment || "CRITICAL_IMMEDIATE_ACTION"),
-                isValidDisaster: !isFalse,
-                isFalseAlarm: isFalse,
-                isFakeReport: isFalse,
-                isRealReport: !isFalse,
-                verificationStatus: isFalse ? "FLAGGED_FALSE_ALARM" : "VERIFIED_REAL_EMERGENCY",
-                verificationReason: parsed.verificationReason || (isFalse ? "False alarm detected by AI vision." : "Disaster hazard verified by AI vision."),
-                isLiveAi: true
+                visualTags: parsed.visualTags || ["Disaster Impact", "Rescue Needed"],
+                recommendedResource: parsed.recommendedResource || "Rescue Boat",
+                urgencyAssessment: parsed.urgencyAssessment || "CRITICAL_IMMEDIATE_ACTION",
+                isValidDisaster: true,
+                isFalseAlarm: false,
+                isInvalidImage: false,
+                isFakeReport: false,
+                isRealReport: true,
+                status: "Pending",
+                verificationStatus: "VERIFIED_REAL_EMERGENCY",
+                verificationReason: parsed.verificationReason || "Disaster hazard verified by AI vision.",
+                isLiveAi: true,
+                hasGenuineText: statementCheck.isRealEmergency
               };
             }
           }
@@ -483,57 +657,31 @@ Return ONLY a valid JSON object:
     if (typeof photoUrl === "string" && photoUrl.startsWith("data:image")) {
       const pixelStats = await analyzeImagePixels(photoUrl);
       if (pixelStats) {
-        // Blank or covered frame
-        if (pixelStats.stdDev < 12 || pixelStats.avgBrightness < 16 || pixelStats.avgBrightness > 242) {
-          return {
-            detectedHazard: "No Disaster Hazard Detected (Blank / Occluded Frame)",
-            hazardSeverity: 0.0,
-            confidence: 98.5,
-            visualTags: ["Blank Frame", "Lens Obstructed", "Zero Hazard Features", "False Alarm"],
-            recommendedResource: "None (False Alarm)",
-            urgencyAssessment: "FALSE_ALARM_DISMISSED",
-            isValidDisaster: false,
-            isFalseAlarm: true,
-            isFakeReport: true,
-            isRealReport: false,
-            verificationStatus: "FLAGGED_FALSE_ALARM",
-            verificationReason: "False Alarm: Attached photo is dark or blank with zero visible disaster indicators."
-          };
-        }
+        const imageValidation = validateImageDisasterContext(pixelStats, {
+          category,
+          fileName: resolvedFileName,
+          sampleId: resolvedSampleId
+        });
 
-        // Selfie / Personal portrait
-        if (pixelStats.skinRatio > 0.42 && pixelStats.waterRatio < 0.12 && pixelStats.fireRatio < 0.04) {
+        if (!imageValidation.isValidDisaster) {
+          const isRequiresReview = Boolean(statementCheck.isRealEmergency);
           return {
-            detectedHazard: "No Emergency Detected (Personal Portrait / Selfie)",
+            detectedHazard: imageValidation.detectedHazard,
             hazardSeverity: 0.0,
-            confidence: 96.2,
-            visualTags: ["Personal Portrait", "Safe Habitat", "Zero Disaster Signs", "False Alarm"],
-            recommendedResource: "None (False Alarm)",
+            confidence: 96.5,
+            visualTags: ["Invalid Image", "No Disaster Features", isRequiresReview ? "Requires Review" : "Rejected"],
+            recommendedResource: "None",
             urgencyAssessment: "FALSE_ALARM_DISMISSED",
             isValidDisaster: false,
-            isFalseAlarm: true,
-            isFakeReport: true,
+            isFalseAlarm: !isRequiresReview,
+            isInvalidImage: true,
+            isFakeReport: !isRequiresReview,
             isRealReport: false,
-            verificationStatus: "FLAGGED_FALSE_ALARM",
-            verificationReason: "False Alarm: Image is a personal selfie without visible flood, fire, or collapse hazards."
-          };
-        }
-
-        // Domestic indoor surface
-        if (pixelStats.waterRatio < 0.08 && pixelStats.fireRatio < 0.03 && pixelStats.stdDev < 22) {
-          return {
-            detectedHazard: "No Disaster Detected (Everyday Indoor Scene)",
-            hazardSeverity: 0.0,
-            confidence: 94.0,
-            visualTags: ["Indoor Flat Surface", "No Standing Water", "Dry Environment", "False Alarm"],
-            recommendedResource: "None (False Alarm)",
-            urgencyAssessment: "FALSE_ALARM_DISMISSED",
-            isValidDisaster: false,
-            isFalseAlarm: true,
-            isFakeReport: true,
-            isRealReport: false,
-            verificationStatus: "FLAGGED_FALSE_ALARM",
-            verificationReason: "False Alarm: Image shows an everyday indoor environment with no signs of flooding, fire, or debris."
+            status: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
+            priorityScore: isRequiresReview ? 1.0 : 0.0,
+            verificationStatus: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
+            verificationReason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
+            hasGenuineText: isRequiresReview
           };
         }
       }
@@ -655,13 +803,15 @@ export const mockAiClassifier = {
    */
   classifyDisasterImage: async (imageSource, category = "flood", hasMedical = false, reportMeta = {}) => {
     return verifyDisasterReport({
-      photoUrl: imageSource && imageSource.startsWith("http") || imageSource && imageSource.startsWith("data:image") ? imageSource : null,
+      photoUrl: imageSource && (imageSource.startsWith("http") || imageSource.startsWith("data:image")) ? imageSource : null,
       category,
       hasMedicalEmergency: hasMedical,
       title: reportMeta.title || "",
       description: reportMeta.description || "",
       voiceTranscript: reportMeta.voiceTranscript || "",
-      peopleCount: reportMeta.peopleCount || 1
+      peopleCount: reportMeta.peopleCount || 1,
+      fileName: reportMeta.fileName || reportMeta.name || "",
+      imageMetadata: reportMeta
     });
   }
 };

@@ -28,7 +28,11 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
         setPhotoUrl(sample.url);
       }
 
-      const result = await mockAiClassifier.classifyDisasterImage(sample.url, sample.category, hasMedical);
+      const result = await mockAiClassifier.classifyDisasterImage(sample.url, sample.category, hasMedical, {
+        fileName: sample.id,
+        sampleId: sample.id,
+        label: sample.label
+      });
       setAiClassification(result);
     } catch (err) {
       console.error("AI inference error:", err);
@@ -47,7 +51,11 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
       const finalUrl = compressedDataUrl || file;
       setPhotoUrl(finalUrl);
 
-      const result = await mockAiClassifier.classifyDisasterImage(finalUrl, category, hasMedical);
+      const result = await mockAiClassifier.classifyDisasterImage(finalUrl, category, hasMedical, {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
       setAiClassification(result);
     } catch (err) {
       console.error("AI inference error:", err);
@@ -199,18 +207,23 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
 
               {/* Verification Details */}
               <div className="space-y-1.5">
-                {aiClassification.isFalseAlarm ? (
-                  <div className="p-2.5 rounded-lg bg-white/90 border border-amber-200 text-xs space-y-1">
-                    <p className="font-bold text-amber-900 flex items-center gap-1">
-                      <span>Picture does not appear to show a valid disaster scene!</span>
-                    </p>
-                    <p className="text-[11px] text-amber-800 leading-relaxed">
-                      {aiClassification.verificationReason ||
-                        "AI vision detected no active floodwaters, structural damage, fire, or trauma."}
-                    </p>
-                    <p className="text-[10px] text-amber-700 font-semibold pt-1 border-t border-amber-100">
-                      Triage Notice: This report will be tagged with Priority Score 0.0/10 as a false alarm and deprioritized.
-                    </p>
+                {aiClassification.isFalseAlarm || aiClassification.isInvalidImage || aiClassification.isValidDisaster === false ? (
+                  <div className="p-3 rounded-xl bg-amber-50 border-2 border-amber-300 text-xs space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="font-bold text-amber-950 text-xs leading-snug">
+                          Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.
+                        </p>
+                        <p className="text-[11px] text-amber-800">
+                          {aiClassification.verificationReason}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] text-amber-900 font-semibold border-t border-amber-200">
+                          <span>Status: <span className="font-mono uppercase px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 font-bold">{aiClassification.status || "REJECTED"}</span></span>
+                          <span>Priority Score: <span className="font-mono px-1.5 py-0.5 rounded bg-white text-red-600 border border-amber-200 font-bold">{aiClassification.priorityScore ?? 0}/10</span></span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <>

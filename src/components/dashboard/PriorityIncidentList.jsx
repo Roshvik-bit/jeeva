@@ -132,6 +132,11 @@ export const PriorityIncidentList = ({
                     ⚠️ False Statement / Non-Hazard
                   </span>
                 )}
+                {incident.isInvalidImage && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 text-[10px] font-semibold border border-amber-200">
+                    ⚠️ Non-Disaster Photo
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-1.5 font-medium text-slate-800">
@@ -181,9 +186,13 @@ export const PriorityIncidentList = ({
             <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
               <div className="text-xs font-semibold text-slate-700">
                 <span>{t.priorityScore || "Priority Score"}: </span>
-                {incident.isFalseAlarm || incident.severity === "False Alarm" ? (
-                  <span className="font-mono font-bold text-sm text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-                    0.0/10 (False Alarm)
+                {incident.isFalseAlarm || incident.severity === "False Alarm" || incident.status === "REJECTED" ? (
+                  <span className="font-mono font-bold text-xs text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
+                    0.0/10 (REJECTED)
+                  </span>
+                ) : incident.status === "REQUIRES_REVIEW" || incident.isRequiresReview ? (
+                  <span className="font-mono font-bold text-xs text-blue-900 bg-blue-100 px-1.5 py-0.5 rounded border border-blue-300">
+                    1.0/10 (REQUIRES REVIEW)
                   </span>
                 ) : (
                   <span className={`font-mono font-bold text-sm ${

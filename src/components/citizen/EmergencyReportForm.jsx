@@ -130,14 +130,32 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
 
       const currentCategoryLabel = categories.find((c) => c.id === category)?.label || category;
 
+      const isInvalidImg = Boolean(
+        result?.isInvalidImage ||
+        aiClassification?.isInvalidImage ||
+        (photoUrl && (aiClassification?.isValidDisaster === false || result?.isValidDisaster === false))
+      );
+
       const isFalse = Boolean(
         result?.isFalseAlarm ||
         aiClassification?.isFalseAlarm ||
-        currentStatementCheck.isFakeStatement
+        currentStatementCheck.isFakeStatement ||
+        (isInvalidImg && !currentStatementCheck.isRealEmergency)
       );
 
-      const calculatedScore = isFalse ? 0.0 : (result?.priorityScore != null ? result.priorityScore : 7.5);
-      const calculatedSeverity = isFalse ? "False Alarm" : (result?.severity || "High");
+      const isRequiresReview = Boolean(
+        result?.isRequiresReview ||
+        aiClassification?.status === "REQUIRES_REVIEW" ||
+        (isInvalidImg && currentStatementCheck.isRealEmergency)
+      );
+
+      const assignedStatus = result?.status || (isRequiresReview ? "REQUIRES_REVIEW" : (isFalse ? "REJECTED" : "Pending"));
+      const calculatedScore = isFalse ? 0.0 : (isRequiresReview ? 1.0 : (result?.priorityScore != null ? result.priorityScore : 7.5));
+      const calculatedSeverity = isFalse ? "False Alarm" : (isRequiresReview ? "Requires Review" : (result?.severity || "High"));
+
+      const defaultReason = isInvalidImg
+        ? "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description."
+        : (isFalse ? "Classified as False Alarm: Non-emergency report." : "Verified genuine disaster emergency.");
 
       setSubmittedReceipt({
         incidentId: incidentIdFormatted,
@@ -156,9 +174,12 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         voiceTranscript,
         isOffline: !isOnline,
         isFalseAlarm: isFalse,
+        isRequiresReview,
+        isInvalidImage: isInvalidImg,
+        status: assignedStatus,
         priorityScore: calculatedScore,
         severity: calculatedSeverity,
-        verificationReason: result?.verificationReason || aiClassification?.verificationReason || currentStatementCheck.reason || (isFalse ? "Classified as False Alarm: Non-emergency report." : "Verified genuine disaster emergency."),
+        verificationReason: result?.verificationReason || aiClassification?.verificationReason || currentStatementCheck.reason || defaultReason,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       });
 
@@ -173,6 +194,8 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
   // Receipt / Confirmation Success Screen
   if (submittedReceipt) {
     const isFalse = Boolean(submittedReceipt.isFalseAlarm);
+    const isRequiresReview = Boolean(submittedReceipt.isRequiresReview);
+    const isInvalidImg = Boolean(submittedReceipt.isInvalidImage);
 
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7 space-y-5 text-center shadow-sm">
@@ -180,25 +203,39 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           <div className={`w-14 h-14 rounded-full flex items-center justify-center border mb-3 ${
             isFalse
               ? "bg-amber-50 text-amber-600 border-amber-300 ring-4 ring-amber-50"
+              : isRequiresReview
+              ? "bg-blue-50 text-blue-600 border-blue-300 ring-4 ring-blue-50"
               : "bg-green-50 text-green-600 border-green-200 ring-4 ring-green-50"
           }`}>
-            {isFalse ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
+            {isFalse ? <AlertTriangle className="w-8 h-8" /> : isRequiresReview ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
           </div>
 
           <div className="space-y-1">
             <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
               isFalse
                 ? "bg-amber-100 text-amber-900 border-amber-300"
+                : isRequiresReview
+                ? "bg-blue-100 text-blue-900 border-blue-300"
                 : "bg-green-100 text-green-900 border-green-300"
             }`}>
-              {isFalse ? "⚠️ False Alarm / Fake Report Identified" : "✓ Verified Genuine Emergency Report"}
+              {isFalse
+                ? "⚠️ False Alarm / Rejected (Score: 0.0)"
+                : isRequiresReview
+                ? "🔍 Requires Review / Image Verification Failed (Score: 1.0)"
+                : "✓ Verified Genuine Emergency Report"}
             </span>
 
             <h2 className="text-2xl font-bold text-slate-900 pt-1">
-              {isFalse ? "Report Logged — Marked as False Alarm" : (t.reportSubmittedTitle || "Report Submitted Successfully")}
+              {isFalse
+                ? "Report Logged — Marked as False Alarm / Rejected"
+                : isRequiresReview
+                ? "Report Logged — Requires Review"
+                : (t.reportSubmittedTitle || "Report Submitted Successfully")}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 max-w-sm mt-1 mx-auto">
-              {isFalse
+              {isInvalidImg
+                ? "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description."
+                : isFalse
                 ? "Our automated AI authenticity engine evaluated this statement/image and flagged it as a false alarm. Priority Score is 0.0/10."
                 : (t.reportSubmittedDesc || "Your emergency alert has been verified and transmitted to the rescue command center.")}
             </p>
@@ -216,12 +253,20 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         <div className={`p-4 rounded-xl text-left border space-y-2.5 ${
           isFalse
             ? "bg-amber-50 border-amber-300 text-amber-900"
+            : isRequiresReview
+            ? "bg-blue-50 border-blue-300 text-blue-900"
             : "bg-blue-50 border-blue-200 text-blue-900"
         }`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
-              {isFalse ? <AlertTriangle className="w-4 h-4 text-amber-600" /> : <ShieldCheck className="w-4 h-4 text-blue-600" />}
-              <span>{isFalse ? "False Alarm Verification Notice" : "Priority Score & Operational Triage"}</span>
+              {isFalse || isRequiresReview ? <AlertTriangle className="w-4 h-4 text-amber-600" /> : <ShieldCheck className="w-4 h-4 text-blue-600" />}
+              <span>
+                {isFalse
+                  ? "Status: REJECTED"
+                  : isRequiresReview
+                  ? "Status: REQUIRES REVIEW"
+                  : "Priority Score & Operational Triage"}
+              </span>
             </span>
             <div className={`px-2.5 py-1 rounded-lg font-mono font-bold text-sm border ${
               isFalse
@@ -233,13 +278,13 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           </div>
 
           <p className="text-xs leading-relaxed font-medium">
-            {submittedReceipt.verificationReason || (isFalse ? "Report evaluated as a false alarm." : "Incident verified by multi-factor disaster triage AI.")}
+            {submittedReceipt.verificationReason || defaultReason}
           </p>
 
           <div className="text-[11px] pt-1 border-t border-current/20 flex items-center justify-between font-semibold">
-            <span>Operational Severity:</span>
-            <span className={isFalse ? "text-amber-800" : "text-blue-800"}>
-              {submittedReceipt.severity || (isFalse ? "False Alarm" : "High")}
+            <span>Operational Status & Severity:</span>
+            <span className={isFalse ? "text-amber-800 font-mono font-bold" : "text-blue-800 font-mono font-bold"}>
+              {submittedReceipt.status} ({submittedReceipt.severity})
             </span>
           </div>
         </div>
@@ -431,6 +476,19 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           category={category}
           hasMedical={hasMedicalEmergency}
         />
+        {photoUrl && aiClassification && (aiClassification.isInvalidImage || aiClassification.isValidDisaster === false || aiClassification.isFalseAlarm) && (
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs text-amber-900 shadow-xs flex items-start gap-2.5 mt-2">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <p className="font-bold text-amber-950 text-xs leading-snug">
+                Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.
+              </p>
+              <p className="text-[11px] text-amber-800">
+                Priority score will be assigned {aiClassification.status === "REQUIRES_REVIEW" ? "1.0" : "0.0"} and status set to {aiClassification.status || "REJECTED"}.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 4. Voice Report */}
