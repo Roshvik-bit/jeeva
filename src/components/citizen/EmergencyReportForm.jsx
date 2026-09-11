@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useEmergency } from "../../context/EmergencyContext";
+import { getPlayableAudioUrl } from "../../services/storageService";
 import { LocationPicker } from "./LocationPicker";
 import { PhotoCaptureModal } from "./PhotoCaptureModal";
 import { VoiceRecorderModal } from "./VoiceRecorderModal";
@@ -215,14 +216,26 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
             </div>
           )}
 
-          {submittedReceipt.audioUrl && (
+          {(submittedReceipt.audioUrl || submittedReceipt.audioBase64) && (
             <div className="pt-2 text-left space-y-1">
-              <span className="text-[11px] font-bold text-slate-700 block">
-                {submittedReceipt.isOffline ? "🎙️ Voice Audio Note (Stored Offline):" : "🎙️ Recorded Voice Distress Note:"}
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-700 block">
+                  {submittedReceipt.isOffline ? "🎙️ Voice Audio Note (Stored Offline):" : "🎙️ Recorded Voice Distress Note:"}
+                </span>
+                <a
+                  href={getPlayableAudioUrl(submittedReceipt.audioUrl || submittedReceipt.audioBase64)}
+                  download={`receipt_${submittedReceipt.incidentId}_audio.webm`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline text-[10px] font-semibold"
+                >
+                  Open Audio ↗
+                </a>
+              </div>
               <audio
-                src={submittedReceipt.audioUrl}
+                src={getPlayableAudioUrl(submittedReceipt.audioUrl || submittedReceipt.audioBase64)}
                 controls
+                preload="metadata"
                 className="w-full h-8 rounded"
               />
             </div>

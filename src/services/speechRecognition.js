@@ -475,9 +475,11 @@ export const speechService = {
       throw new Error("MediaRecorder or Microphone access is not supported in this browser environment.");
     }
 
-    // 1. Request microphone stream
+    // 1. Request microphone stream with voice-optimized mono constraints
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: {
+        channelCount: 1, // Mono saves 50% file size
+        sampleRate: 16000, // 16kHz speech bandwidth
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true
@@ -526,10 +528,17 @@ export const speechService = {
       console.warn("Web Audio API visualizer initialization failed:", err);
     }
 
-    // 3. Set up MediaRecorder
+    // 3. Set up MediaRecorder with voice-optimized 24 kbps compression (~3 KB/sec)
     const mimeType = speechService.getSupportedMimeType();
-    const options = mimeType ? { mimeType } : undefined;
-    const mediaRecorder = new MediaRecorder(stream, options);
+    let mediaRecorder;
+    try {
+      mediaRecorder = new MediaRecorder(stream, {
+        ...(mimeType ? { mimeType } : {}),
+        audioBitsPerSecond: 24000
+      });
+    } catch (optErr) {
+      mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    }
     const audioChunks = [];
 
     mediaRecorder.ondataavailable = (e) => {
@@ -538,12 +547,18 @@ export const speechService = {
       }
     };
 
-    // 4. Elapsed time timer
+    // 4. Elapsed time timer with 60-second safety cap
     let secondsElapsed = 0;
     const timerInterval = setInterval(() => {
       secondsElapsed += 1;
       if (onTimerTick) {
         onTimerTick(secondsElapsed);
+      }
+      // Voice distress note safety cap at 60 seconds
+      if (secondsElapsed >= 60 && mediaRecorder.state === "recording") {
+        try {
+          mediaRecorder.stop();
+        } catch (e) {}
       }
     }, 1000);
 

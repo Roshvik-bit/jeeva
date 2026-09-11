@@ -38,6 +38,7 @@ export const VoiceRecorderModal = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
+  const [audioSizeBytes, setAudioSizeBytes] = useState(0);
 
   const recorderSessionRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -213,6 +214,7 @@ export const VoiceRecorderModal = ({
           }
           recordedDuration = audioResult.duration || recordedDuration;
           setAudioDuration(recordedDuration);
+          setAudioSizeBytes(audioResult.sizeBytes || 0);
         }
       } catch (err) {
         console.error("Error stopping media recording:", err);
@@ -537,6 +539,11 @@ export const VoiceRecorderModal = ({
                 <span className="text-[10px] font-mono text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded font-bold">
                   {speechService.formatDuration(audioDuration)}
                 </span>
+                {audioSizeBytes > 0 && (
+                  <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded font-bold">
+                    {Math.max(1, Math.round(audioSizeBytes / 1024))} KB (Compressed)
+                  </span>
+                )}
               </div>
               <div className="w-36 sm:w-48 bg-blue-200 h-1 rounded-full mt-1.5 overflow-hidden">
                 <div

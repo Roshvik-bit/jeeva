@@ -1,5 +1,6 @@
 import React from "react";
 import { useEmergency } from "../../context/EmergencyContext";
+import { getPlayableAudioUrl } from "../../services/storageService";
 import { FileText, Clock, CheckCircle2, Truck, AlertCircle, X, ExternalLink } from "lucide-react";
 
 export const MyReportsDrawer = ({ isOpen, onClose }) => {
@@ -111,12 +112,26 @@ export const MyReportsDrawer = ({ isOpen, onClose }) => {
                     </div>
                   )}
 
-                  {rep.audioUrl && (
+                  {(rep.audioUrl || rep.audioBase64) && (
                     <div className="pt-1 space-y-1">
-                      <span className="text-[10px] font-bold text-slate-600 flex items-center gap-1">
+                      <span className="text-[10px] font-bold text-slate-600 flex items-center justify-between">
                         <span>🎙️ Voice Distress Note:</span>
+                        <a
+                          href={getPlayableAudioUrl(rep.audioUrl || rep.audioBase64)}
+                          download={`voice_note_${rep.id || rep.localId}.webm`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline text-[10px] font-medium"
+                        >
+                          Open ↗
+                        </a>
                       </span>
-                      <audio src={rep.audioUrl} controls className="w-full h-7 rounded" />
+                      <audio
+                        src={getPlayableAudioUrl(rep.audioUrl || rep.audioBase64)}
+                        controls
+                        preload="metadata"
+                        className="w-full h-7 rounded"
+                      />
                     </div>
                   )}
 

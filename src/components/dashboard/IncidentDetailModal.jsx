@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useEmergency } from "../../context/EmergencyContext";
-import { storageService } from "../../services/storageService";
+import { storageService, getPlayableAudioUrl } from "../../services/storageService";
 import { DispatchUnitModal } from "./DispatchUnitModal";
 import {
   AlertOctagon,
@@ -24,7 +24,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
   if (!isOpen || !incident) return null;
 
   const assignedUnitObj = rescueUnits.find((u) => u.id === incident.assignedUnit);
-  const audioSrc = incident.audioUrl || (incident.audioBase64 ? storageService.base64ToBlobUrl(incident.audioBase64) : null);
+  const audioSrc = getPlayableAudioUrl(incident.audioUrl || incident.audioBase64);
 
   const handleStatusChange = (newStatus) => {
     updateIncidentStatus(incident.id, newStatus);
@@ -350,12 +350,23 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                 </div>
               )}
               {audioSrc && (
-                <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-slate-700 space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900">
-                    <Volume2 className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Recorded Civilian Audio Call:</span>
+                <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200 text-slate-700 space-y-2">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold text-blue-900">
+                      <Volume2 className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Recorded Civilian Voice Call</span>
+                    </div>
+                    <a
+                      href={audioSrc}
+                      download={`incident_${incident.id}_audio.webm`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+                    >
+                      Open Audio File ↗
+                    </a>
                   </div>
-                  <audio src={audioSrc} controls className="w-full h-8 rounded" />
+                  <audio src={audioSrc} controls preload="metadata" className="w-full h-8 rounded" />
                 </div>
               )}
             </div>

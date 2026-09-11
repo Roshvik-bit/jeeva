@@ -155,6 +155,21 @@ export const storageService = {
     }
   },
 
+  /**
+   * Convert any audio source (Base64, Data URL, Blob URL, or HTTP link)
+   * into a browser-safe playable URL. Resolves "file is too large" errors by
+   * creating a lightweight memory Blob URL instead of DOM string decoding.
+   */
+  getPlayableAudioUrl: (urlOrBase64) => {
+    if (!urlOrBase64 || typeof urlOrBase64 !== "string") return null;
+    const trimmed = urlOrBase64.trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith("blob:") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      return trimmed;
+    }
+    return storageService.base64ToBlobUrl(trimmed);
+  },
+
   // Master Incidents (LocalStorage)
   getIncidents: () => {
     try {
@@ -360,3 +375,5 @@ export const storageService = {
     }
   }
 };
+
+export const getPlayableAudioUrl = storageService.getPlayableAudioUrl;
