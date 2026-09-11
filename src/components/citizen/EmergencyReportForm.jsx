@@ -78,62 +78,6 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
     setSubmittedReceipt(null);
   };
 
-  const handleQuickScenario = (type) => {
-    if (type === "flood_real") {
-      setCategory("flood");
-      setTitle("Severe Flood Inundation - Water Level Rising Above 5 Feet");
-      setDescription("River overflowed banks. Ground floor completely submerged. 6 residents trapped on terrace, water rising rapidly.");
-      setPeopleCount(6);
-      setHasMedicalEmergency(false);
-      setMedicalDetails("");
-      setAiClassification(null);
-    } else if (type === "fire_real") {
-      setCategory("fire");
-      setTitle("Massive Commercial Building Fire with Trapped Workers");
-      setDescription("Heavy smoke billowing from 2nd floor, open flames spreading rapidly. Risk of gas cylinder explosion.");
-      setPeopleCount(4);
-      setHasMedicalEmergency(true);
-      setMedicalDetails("2 people suffering from severe smoke inhalation and burns.");
-      setAiClassification(null);
-    } else if (type === "medical_real") {
-      setCategory("medical");
-      setTitle("Acute Cardiac Arrest in Inaccessible Waterlogged Home");
-      setDescription("Elderly family member collapsed, unconscious with weak pulse. Ambulance cannot reach due to 3ft standing water.");
-      setPeopleCount(2);
-      setHasMedicalEmergency(true);
-      setMedicalDetails("Unconscious, cardiac history, oxygen level dropping.");
-      setAiClassification(null);
-    } else if (type === "prank_fake") {
-      setCategory("flood");
-      setTitle("Testing app prank haha lol");
-      setDescription("This is just a fake prank test haha lol nothing is wrong just fooling around with friends.");
-      setPeopleCount(1);
-      setHasMedicalEmergency(false);
-      setMedicalDetails("");
-      setAiClassification({
-        isFalseAlarm: true,
-        isFakeReport: true,
-        isValidDisaster: false,
-        hazardSeverity: 0.0,
-        verificationReason: "Flagged as Fake Report: Statement contains prank/joke markers ('prank haha lol'). Priority Score set to 0.0/10."
-      });
-    } else if (type === "pizza_fake") {
-      setCategory("trapped");
-      setTitle("Need pizza delivered to my house urgent");
-      setDescription("I am so hungry please send a delivery boy with pizza and cold drinks to my house asap.");
-      setPeopleCount(1);
-      setHasMedicalEmergency(false);
-      setMedicalDetails("");
-      setAiClassification({
-        isFalseAlarm: true,
-        isFakeReport: true,
-        isValidDisaster: false,
-        hazardSeverity: 0.0,
-        verificationReason: "Flagged as False Alarm: Statement is a non-emergency food delivery request ('pizza'). Priority Score set to 0.0/10."
-      });
-    }
-  };
-
   const currentStatementCheck = verifyReportStatement([title, description, voiceTranscript].filter(Boolean).join(" "));
 
   const handleSubmit = async (e) => {
@@ -412,53 +356,6 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* 0. Quick Test Scenarios Bar */}
-      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            <span>1-Click Test Scenarios (Real vs False Alarms)</span>
-          </span>
-          <span className="text-[10px] text-slate-500">Click to autofill & test</span>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => handleQuickScenario("flood_real")}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-300 transition-colors"
-          >
-            🌊 Flood Disaster (Real)
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickScenario("fire_real")}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 hover:bg-red-200 text-red-800 border border-red-300 transition-colors"
-          >
-            🔥 Building Fire (Real)
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickScenario("medical_real")}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 transition-colors"
-          >
-            🚑 Cardiac Crisis (Real)
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickScenario("prank_fake")}
-            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition-colors"
-          >
-            ⚠️ Prank Test (Score 0.0)
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickScenario("pizza_fake")}
-            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-100 hover:bg-orange-200 text-orange-900 border border-orange-300 transition-colors"
-          >
-            🍕 Pizza Request (Score 0.0)
-          </button>
-        </div>
-      </div>
       {/* 1. Incident Type */}
       <div className="space-y-1.5">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">

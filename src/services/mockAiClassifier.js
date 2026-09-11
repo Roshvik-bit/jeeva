@@ -118,75 +118,123 @@ export const SAMPLE_DISASTER_IMAGES = [
 
 /**
  * Checks report text statement (title, description, transcript) for fake report / false alarm markers.
- * Identifies pranks, jokes, trivial deliveries, fantasy claims, contradictions, and non-emergency requests.
+ * Accurately differentiates all genuine emergencies from false alarms, pranks, trivial requests, and hoaxes.
  */
 export const verifyReportStatement = (textContext = "", options = {}) => {
   if (!textContext || typeof textContext !== "string") {
-    return { isFakeStatement: false, reason: null, confidence: 90 };
+    return { isFakeStatement: false, isRealEmergency: false, reason: null, confidence: 90 };
   }
 
   const normalized = textContext.toLowerCase().trim();
   if (normalized.length === 0) {
-    return { isFakeStatement: false, reason: null, confidence: 90 };
+    return { isFakeStatement: false, isRealEmergency: false, reason: null, confidence: 90 };
   }
 
-  // 1. Explicit Prank / Joke / Hoax / Troll / Test markers
-  const prankRegex = /\b(prank|joke|joking|fake\s*report|fake\s*alarm|hoax|troll|trolling|haha|hehe|lol|lmao|just\s*kidding|jk\b|just\s*testing|test\s*123|testing\s*app|trial\s*test|mock\s*report|playing\s*around|fooling\s*around)\b/i;
+  // Check for domestic plumbing / minor domestic leak (explicitly not a disaster)
+  const isDomesticPlumbing = /\b(plumber|plumbing|tap\s*leak|leaking\s*tap|bathroom\s*tap|kitchen\s*tap|faucet|shower\s*leak)\b/i.test(normalized);
+  const hasSevereFloodIndicators = /\b(flood|flooding|flooded|submerged|inundat\w*|overflow\w*|drown|drowning|river|dam|reservoir|stranded|roof|rescue|boat)\b/i.test(normalized);
+
+  // 1. Check for Genuine Emergency Keywords
+  const emergencyKeywords = /\b(flood|floods|flooding|flooded|waterlogged|submerged|inundat\w*|overflow\w*|drown|drowning|river\s*current|river\s*overflow|rising\s*water|deep\s*water|standing\s*water|flood\s*water|rain\s*water\s*entering|downpour|cloudburst|stranded|canal\s*breach|dam\s*breach|fire|fires|smoke|flame|flames|blaze|burning|burn|burns|explosion\w*|blast|cylinder|gas\s*leak\w*|chemical\s*leak\w*|short\s*circuit|medical|injur\w*|bleeding|bleed|unconscious|faint\w*|cardiac|heart\s*attack|chest\s*pain|fracture|broken\s*bone|trauma|breathing|breathless|breath|asthma|suffocat\w*|stroke|ambulance|doctor|hospital|casualty|casualties|patient|patients|oxygen|medic|trapped|stuck|debris|collaps\w*|rubble|crush\w*|caved\s*in|sinkhole\w*|landslide\w*|mudslide\w*|rockfall\w*|earthquake\w*|tremor\w*|bridge|crack|entomb\w*|rescue|evacuat\w*|sos\b|urgent|save\s*us|help|cyclone\w*|storm\w*|hurricane\w*|gale\w*|typhoon\w*|tornado\w*|uproot\w*|electric\s*shock|transformer|live\s*wire)\b/i;
+  
+  // Standalone "water" is only emergency if accompanied by water level/rising/entering/street flooded
+  const isGeneralWaterEmergency = /\b(water\s*level|water\s*rising|water\s*entered|water\s*entering|high\s*water|waist\s*deep|chest\s*deep|water\s*inside\s*house)\b/i.test(normalized);
+
+  const isReal = (emergencyKeywords.test(normalized) || isGeneralWaterEmergency) && (!isDomesticPlumbing || hasSevereFloodIndicators);
+
+  // 2. Explicit Prank / Joke / Hoax / Troll / Test markers (ALWAYS fake, even if disaster words are spoofed)
+  const prankRegex = /\b(prank|pranks|pranked|joke|jokes|joking|fake\s*report|fake\s*alarm|fake\s*statement|fake\s*sos|hoax|hoaxes|troll|trolls|trolling|haha|hehe|lol|lmao|rofl|just\s*kidding|jk\b|just\s*testing|test\s*123|testing\s*app|testing\s*only|trial\s*test|mock\s*report|mock\s*alert|playing\s*around|fooling\s*around|ignore\s*this|ignore\s*report|not\s*real|bogus|scam|april\s*fool)\b/i;
   const prankMatch = normalized.match(prankRegex);
   if (prankMatch) {
     return {
       isFakeStatement: true,
+      isRealEmergency: false,
       reason: `Flagged as Fake Report: Statement contains prank/test marker ('${prankMatch[0]}'). Zero emergency credibility.`,
       confidence: 99.0
     };
   }
 
-  // 2. Commercial / Food delivery / Non-emergency trivial requests
-  const trivialRegex = /\b(pizza|burger|ice\s*cream|biryani|beer|alcohol|party|movie|cinema|netflix|gaming|pubg|free\s*fire|homework|swiggy|zomato|order\s*food|deliver\s*food|shopping|buy\s*car)\b/i;
-  const trivialMatch = normalized.match(trivialRegex);
-  if (trivialMatch) {
-    return {
-      isFakeStatement: true,
-      reason: `Flagged as False Alarm: Statement indicates a non-emergency trivial or delivery request ('${trivialMatch[0]}'). Not a disaster situation.`,
-      confidence: 97.5
-    };
-  }
-
   // 3. Fictional / Fantasy / Mythical claims
-  const fantasyRegex = /\b(alien|aliens|ufo|flying\s*saucer|dragon|dragons|zombie|zombies|vampire|vampires|ghost|ghosts|monster|monsters|superhero|batman|superman|spiderman)\b/i;
+  const fantasyRegex = /\b(alien|aliens|extraterrestrial|ufo|flying\s*saucer|dragon|dragons|zombie|zombies|vampire|vampires|werewolf|ghost|ghosts|demon|demons|monster|monsters|dinosaur|godzilla|superhero|batman|superman|spiderman|avengers|thanos)\b/i;
   const fantasyMatch = normalized.match(fantasyRegex);
   if (fantasyMatch) {
     return {
       isFakeStatement: true,
+      isRealEmergency: false,
       reason: `Flagged as Fake Report: Statement contains fictitious/fantasy narrative ('${fantasyMatch[0]}'). Zero real hazard.`,
       confidence: 99.5
     };
   }
 
   // 4. Explicit denial / contradiction of emergency
-  const denialRegex = /\b(nothing\s*happened|no\s*disaster|no\s*emergency|everything\s*is\s*fine|all\s*good\s*here|just\s*chilling|relaxing\s*at\s*home|no\s*flood\s*here|sunny\s*day|false\s*alert)\b/i;
+  const denialRegex = /\b(nothing\s*happened|no\s*disaster|no\s*emergency|no\s*problem|everything\s*is\s*fine|all\s*good\s*here|all\s*good|all\s*safe|just\s*chilling|relaxing\s*at\s*home|watching\s*tv|playing\s*games|no\s*flood|sunny\s*day|sunny\s*outside|false\s*alert|accidental\s*click|wrong\s*button|mistake|just\s*browsing)\b/i;
   const denialMatch = normalized.match(denialRegex);
   if (denialMatch) {
     return {
       isFakeStatement: true,
+      isRealEmergency: false,
       reason: `Flagged as False Alarm: Statement explicitly states there is no emergency or hazard ('${denialMatch[0]}').`,
       confidence: 98.0
     };
   }
 
-  // 5. Keystroke mash / Nonsense spam (e.g. asdfghjkl, 12345678, aaaaaaaa)
-  const isGibberish = /^[a-z0-9]{1,4}$/i.test(normalized) ||
-    /^(.)\1{4,}$/i.test(normalized) ||
-    /^(asdf|qwer|zxcv|1234|test)+$/i.test(normalized.replace(/[\s\-_]/g, ""));
-  if (isGibberish && normalized.length > 3) {
+  // 5. Commercial / Food delivery / Domestic repairs / Lost items (when no real emergency)
+  const trivialRegex = /\b(pizza|pizzas|burger|burgers|ice\s*cream|biryani|fried\s*rice|noodles|coke|pepsi|beer|wine|whiskey|alcohol|vodka|coffee|tea|chai|snacks|sandwich|breakfast|lunch|dinner|swiggy|zomato|order\s*food|deliver\s*food|shopping|buy\s*phone|sell\s*phone|buy\s*car|sell\s*car|discount|coupon|recharge|loan|wifi|router|internet|broadband|netflix|youtube|gaming|pubg|free\s*fire|minecraft|gta|fortnite|homework|plumber|plumbing|tap\s*leak|leaking\s*tap|bathroom\s*tap|faucet|electrician|ceiling\s*fan|ac\s*repair|air\s*conditioner|laundry|clean\s*room|maid|lost\s*.*keys|lost\s*wallet|lost\s*phone|lost\s*bag|flat\s*tyre|flat\s*tire|puncture|cab|taxi|uber|ola|bike\s*repair)\b/i;
+  const trivialMatch = normalized.match(trivialRegex);
+  if (trivialMatch && !isReal) {
     return {
       isFakeStatement: true,
-      reason: "Flagged as False Alarm: Statement consists of non-descriptive keystroke mash/gibberish.",
+      isRealEmergency: false,
+      reason: `Flagged as False Alarm: Statement indicates a non-emergency domestic/commercial matter ('${trivialMatch[0]}'). Not a disaster situation.`,
+      confidence: 97.5
+    };
+  }
+
+  // 6. Casual small talk / pure greetings / audio check (when zero emergency keywords)
+  const greetingPhrases = /^(hello|hi|hey|good\s*(morning|afternoon|evening|night|day)|how\s*(are\s*you|r\s*u)|how('?s|\s+is)\s*it\s*going|what('?s|\s+is)\s*up|what('?s|\s+is)\s*this|yo|sup|greetings|welcome|thanks|thank\s*you|please|sir|madam|bro|dude|there|everyone|doing|fine|ok|okay|nice\s*to\s*meet\s*you|just\s*(saying\s*hi|checking|browsing|looking)|test|testing|check|mic\s*test|audio\s*test|123|\s+|,|\.|\!|\?)+$/i;
+  if (!isReal && greetingPhrases.test(normalized)) {
+    return {
+      isFakeStatement: true,
+      isRealEmergency: false,
+      reason: "Flagged as False Alarm: Statement consists of non-emergency casual greeting without any incident context.",
+      confidence: 96.0
+    };
+  }
+
+  // 7. Keystroke mash / Nonsense spam / Gibberish (when zero emergency keywords)
+  const isGibberish = !isReal && (
+    /^(.)\1{3,}$/i.test(normalized) ||
+    /^(asdf|ghjkl|qwerty|uiop|zxcvbn|1234|qwer)+$/i.test(normalized.replace(/[\s\-_]/g, "")) ||
+    /\b[bcdfghjklmnpqrstvwxyz]{6,}\b/i.test(normalized) ||
+    /^(asdf|qwer|zxcv|test)+$/i.test(normalized) ||
+    (normalized.length > 5 && /(asdf|ghjkl|qwerty)/i.test(normalized))
+  );
+
+  if (isGibberish) {
+    return {
+      isFakeStatement: true,
+      isRealEmergency: false,
+      reason: "Flagged as False Alarm: Statement consists of non-descriptive keystroke mash or gibberish.",
       confidence: 95.0
     };
   }
 
-  return { isFakeStatement: false, reason: null, confidence: 92.0 };
+  // 8. Genuine Emergency Indicators
+  if (isReal) {
+    return {
+      isFakeStatement: false,
+      isRealEmergency: true,
+      reason: "Genuine emergency indicators detected in statement.",
+      confidence: 96.0
+    };
+  }
+
+  return {
+    isFakeStatement: false,
+    isRealEmergency: false,
+    reason: null,
+    confidence: 85.0
+  };
 };
 
 /**
