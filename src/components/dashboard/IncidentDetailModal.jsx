@@ -342,6 +342,15 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                   </div>
                 </div>
               )}
+              {incident.audioUrl && (
+                <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-slate-700 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900">
+                    <Volume2 className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Recorded Civilian Audio Call:</span>
+                  </div>
+                  <audio src={incident.audioUrl} controls className="w-full h-8 rounded" />
+                </div>
+              )}
             </div>
           </div>
 

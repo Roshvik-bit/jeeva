@@ -33,6 +33,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
   const [photoUrl, setPhotoUrl] = useState(null);
   const [aiClassification, setAiClassification] = useState(null);
   const [voiceTranscript, setVoiceTranscript] = useState("");
+  const [voiceAudioUrl, setVoiceAudioUrl] = useState(null);
   const [location, setLocation] = useState({
     lat: 13.0827,
     lng: 80.2707,
@@ -57,6 +58,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
   const handleResetForm = () => {
     setDescription("");
     setVoiceTranscript("");
+    setVoiceAudioUrl(null);
     setPhotoUrl(null);
     setAiClassification(null);
     setHasMedicalEmergency(false);
@@ -87,7 +89,8 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         location,
         photoUrl,
         aiClassification,
-        voiceTranscript
+        voiceTranscript,
+        audioUrl: voiceAudioUrl
       });
 
       const rawId = result?.incidentId || result?.report?.localId || `JEEVA-2026-${Math.floor(100 + Math.random() * 900)}`;
@@ -108,6 +111,8 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         address: location.address,
         lat: location.lat,
         lng: location.lng,
+        audioUrl: voiceAudioUrl,
+        voiceTranscript,
         isOffline: !isOnline,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       });
@@ -177,6 +182,19 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
               {submittedReceipt.isOffline ? "Saved Locally (Will auto-sync)" : "Sent to Rescue Dashboard"}
             </span>
           </div>
+
+          {submittedReceipt.audioUrl && (
+            <div className="pt-2 text-left space-y-1">
+              <span className="text-[11px] font-bold text-slate-700 block">
+                Recorded Voice Distress Note:
+              </span>
+              <audio
+                src={submittedReceipt.audioUrl}
+                controls
+                className="w-full h-8 rounded"
+              />
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
@@ -256,6 +274,9 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         <VoiceRecorderModal
           voiceTranscript={voiceTranscript}
           setVoiceTranscript={setVoiceTranscript}
+          audioUrl={voiceAudioUrl}
+          setAudioUrl={setVoiceAudioUrl}
+          category={category}
         />
       </div>
 
