@@ -92,3 +92,19 @@
 .map-tiles-tactical-dark .leaflet-tile {
   filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(92%) saturate(75%) !important;
 }
+
+/* Crisp Countdown Pop Animation */
+@keyframes countPop {
+  0% {
+    transform: scale(1.35);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-count-pop {
+  animation: countPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
