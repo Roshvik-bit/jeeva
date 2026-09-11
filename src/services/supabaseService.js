@@ -110,7 +110,16 @@ export const supabaseService = {
       let blobToUpload = null;
       if (typeof mediaData === "string" && mediaData.startsWith("data:")) {
         blobToUpload = dataUrlToBlob(mediaData);
-      } else if (mediaData instanceof Blob) {
+      } else if (typeof mediaData === "string" && mediaData.startsWith("blob:") && typeof window !== "undefined") {
+        try {
+          const res = await fetch(mediaData);
+          if (res.ok) {
+            blobToUpload = await res.blob();
+          }
+        } catch (e) {
+          console.warn("Could not fetch blob URL:", e);
+        }
+      } else if (typeof Blob !== "undefined" && mediaData instanceof Blob) {
         blobToUpload = mediaData;
       }
 
@@ -132,6 +141,18 @@ export const supabaseService = {
         } else if (error) {
           // If storage bucket is not created or RLS rejects, fallback to direct column storage
           console.info("Supabase storage bucket notice (using direct database column):", error.message);
+        }
+
+        // If upload to bucket didn't return a public URL and it was a temporary blob: URL,
+        // convert to permanent Base64 Data URL so it is persisted in PostgreSQL
+        if (typeof mediaData === "string" && mediaData.startsWith("blob:") && typeof window !== "undefined") {
+          const b64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = () => resolve(mediaData);
+            reader.readAsDataURL(blobToUpload);
+          });
+          return b64;
         }
       }
     } catch (storageErr) {
@@ -217,6 +238,10 @@ export const supabaseService = {
       if (updates.status !== undefined) payload.status = updates.status;
       if (updates.assignedUnit !== undefined) payload.assigned_unit = updates.assignedUnit;
       if (updates.priorityScore !== undefined) payload.priority_score = updates.priorityScore;
+      if (updates.photoUrl !== undefined) payload.photo_url = updates.photoUrl;
+      if (updates.audioUrl !== undefined) payload.audio_url = updates.audioUrl;
+      if (updates.peopleCount !== undefined) payload.people_count = updates.peopleCount;
+      if (updates.corroboratingReportsCount !== undefined) payload.corroborating_reports_count = updates.corroboratingReportsCount;
 
       const { data, error } = await supabase
         .from("incidents")

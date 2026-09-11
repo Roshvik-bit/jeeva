@@ -17,6 +17,7 @@ export const PRESEEDED_INCIDENTS = [
     medicalDetails: "4 bedridden elderly individuals requiring continuous oxygen concentrators; power cut since 3 hours.",
     description: "Water level rapidly crossed 5 feet and entered ground floor ward. Current flow is severe. Windows submerged. Need urgent motorized boat evacuation with paramedics.",
     photoUrl: "https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=800&q=80",
+    audioUrl: "https://actions.google.com/sounds/v1/emergency/siren_whistle.ogg",
     aiClassification: {
       detectedHazard: "Severe Flash Inundation / Submerged Ground Structures",
       hazardSeverity: 9.6,
@@ -73,6 +74,7 @@ export const PRESEEDED_INCIDENTS = [
     medicalDetails: "2 commuters crushed beneath collapsed steel billboard girders on bridge ramp.",
     description: "Half of the bridge approach has fractured into the water. Two vehicles dangling at edge. Major evacuation corridor blocked for ambulances.",
     photoUrl: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80",
+    audioUrl: "https://actions.google.com/sounds/v1/emergency/emergency_siren_short_burst.ogg",
     aiClassification: {
       detectedHazard: "Structural Failure / Dangling Heavy Vehicles",
       hazardSeverity: 9.1,
@@ -137,6 +139,7 @@ export const PRESEEDED_INCIDENTS = [
     medicalDetails: "32-year-old mother in active labor; 60-year-old grandfather having chest pains.",
     description: "Alleyways flooded chest-deep. 108 ambulance cannot enter due to water height. Require shallow boat with medical crew or stretcher float.",
     photoUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=800&q=80",
+    audioUrl: "https://actions.google.com/sounds/v1/emergency/ambulance_siren.ogg",
     aiClassification: {
       detectedHazard: "Acute Medical Emergency / Narrow Inaccessible Waterway",
       hazardSeverity: 9.4,
@@ -193,6 +196,7 @@ export const PRESEEDED_INCIDENTS = [
     medicalDetails: "No burn injuries yet, but electrical arcing in water is posing extreme electrocution hazard.",
     description: "Transformer caught fire after lightning strike and water ingress. High voltage sparking directly into standing street water. 12 residents trapped in adjacent grocery store balcony.",
     photoUrl: "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=800&q=80",
+    audioUrl: "https://actions.google.com/sounds/v1/emergency/fire_truck_air_horn.ogg",
     aiClassification: {
       detectedHazard: "Active Electrical Arcing into Water / Structural Fire",
       hazardSeverity: 8.8,
@@ -249,6 +253,7 @@ export const PRESEEDED_INCIDENTS = [
     medicalDetails: "No immediate trauma, but 4 tourist vehicles stranded on mountain road.",
     description: "Massive uprooted tree across both lanes with mud debris. SDRF team is clearing with chainsaws. Estimated 35 mins to clear lane 1.",
     photoUrl: "https://images.unsplash.com/photo-1542314831-c6a4d27376db?auto=format&fit=crop&w=800&q=80",
+    audioUrl: "https://actions.google.com/sounds/v1/emergency/siren_short.ogg",
     aiClassification: {
       detectedHazard: "Vegetation & Mud Obstruction on Dual Carriageway",
       hazardSeverity: 6.4,
@@ -288,6 +293,7 @@ export const PRESEEDED_INCIDENTS = [
     medicalDetails: "Infant milk formula and dry rations replenished by district supply truck.",
     description: "45 evacuees housed in community hall had run out of clean drinking water. Municipal water tanker successfully dispatched and distributed 3000L safe water.",
     photoUrl: "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&w=800&q=80",
+    audioUrl: "https://actions.google.com/sounds/v1/emergency/police_siren.ogg",
     aiClassification: {
       detectedHazard: "Shelter Resource Depletion / Safe Inundation Margins",
       hazardSeverity: 4.2,

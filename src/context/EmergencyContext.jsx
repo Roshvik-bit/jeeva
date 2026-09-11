@@ -375,68 +375,92 @@ export const EmergencyProvider = ({ children }) => {
         );
       }
 
+      // Ensure audioBase64 is resolved if only blob URL exists
+      let persistentAudio = rawReport.audioBase64;
+      if (!persistentAudio && rawReport.audioUrl && rawReport.audioUrl.startsWith("blob:") && typeof window !== "undefined") {
+        try {
+          const res = await fetch(rawReport.audioUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            persistentAudio = await storageService.blobToBase64(blob);
+          }
+        } catch (e) {
+          console.warn("Could not convert audio blob to base64:", e);
+        }
+      }
+
       const dupCheck = duplicateDetector.processIncomingReport(
-        { ...rawReport, aiClassification: aiResult, timestamp },
+        { ...rawReport, aiClassification: aiResult, timestamp, audioBase64: persistentAudio },
         incidents
       );
+
+      const scored = calculatePriorityScore({
+        ...rawReport,
+        aiClassification: aiResult,
+        timestamp,
+        corroboratingReportsCount: 1
+      });
+
+      const newCitizenIncident = {
+        id: "INC-2026-" + Math.floor(100 + Math.random() * 900),
+        title: rawReport.title || `${rawReport.category.toUpperCase()} Crisis at ${rawReport.location.address}`,
+        category: rawReport.category,
+        severity: scored.severity,
+        status: "Pending",
+        timestamp,
+        location: rawReport.location,
+        peopleCount: rawReport.peopleCount || 1,
+        hasMedicalEmergency: rawReport.hasMedicalEmergency || false,
+        medicalDetails: rawReport.medicalDetails || "",
+        description: rawReport.description || "Field emergency alert logged by citizen.",
+        photoUrl: rawReport.photoUrl || null,
+        aiClassification: aiResult,
+        voiceTranscript: rawReport.voiceTranscript || "",
+        audioUrl: persistentAudio || rawReport.audioUrl || null,
+        audioBase64: persistentAudio || null,
+        recommendedResource: aiResult?.recommendedResource || "Rescue Boat",
+        assignedUnit: null,
+        priorityScore: scored.priorityScore,
+        scoreBreakdown: scored.scoreBreakdown,
+        corroboratingReportsCount: 1,
+        subReports: []
+      };
 
       let finalIncidentId;
       let isMerged = false;
 
       if (dupCheck.isDuplicate) {
-        // Merge into existing incident
+        // Merge into existing cluster locally
+        const mergedCluster = {
+          ...dupCheck.updatedIncident,
+          photoUrl: dupCheck.updatedIncident.photoUrl || newCitizenIncident.photoUrl,
+          audioUrl: dupCheck.updatedIncident.audioUrl || newCitizenIncident.audioUrl
+        };
+
         setIncidents((prev) =>
-          prev.map((inc) => (inc.id === dupCheck.matchedIncidentId ? dupCheck.updatedIncident : inc))
+          prev.map((inc) => (inc.id === dupCheck.matchedIncidentId ? mergedCluster : inc))
         );
-        finalIncidentId = dupCheck.matchedIncidentId;
+        finalIncidentId = newCitizenIncident.id;
         isMerged = true;
+
         if (supabaseService.isConfigured()) {
-          supabaseService.updateIncident(dupCheck.matchedIncidentId, dupCheck.updatedIncident);
+          // Always insert citizen distress report into Supabase so audio & photo are visible in Table Editor
+          supabaseService.insertIncident(newCitizenIncident);
+          // Also update the cluster in Supabase
+          supabaseService.updateIncident(dupCheck.matchedIncidentId, mergedCluster);
         }
 
         addToast({
           type: "info",
-          title: "Incident Corroborated",
-          message: `Your report matches an active cluster nearby (${dupCheck.distanceMeters}m away) and has boosted priority!`
+          title: "SOS Recorded & Corroborated",
+          message: `Your report #${newCitizenIncident.id} has been saved to the database and corroborated with active cluster #${dupCheck.matchedIncidentId} (${dupCheck.distanceMeters}m away)!`
         });
       } else {
         // Create new incident
-        const scored = calculatePriorityScore({
-          ...rawReport,
-          aiClassification: aiResult,
-          timestamp,
-          corroboratingReportsCount: 1
-        });
-
-        const newIncident = {
-          id: "INC-2026-" + Math.floor(100 + Math.random() * 900),
-          title: rawReport.title || `${rawReport.category.toUpperCase()} Crisis at ${rawReport.location.address}`,
-          category: rawReport.category,
-          severity: scored.severity,
-          status: "Pending",
-          timestamp,
-          location: rawReport.location,
-          peopleCount: rawReport.peopleCount || 1,
-          hasMedicalEmergency: rawReport.hasMedicalEmergency || false,
-          medicalDetails: rawReport.medicalDetails || "",
-          description: rawReport.description || "Field emergency alert logged by citizen.",
-          photoUrl: rawReport.photoUrl || null,
-          aiClassification: aiResult,
-          voiceTranscript: rawReport.voiceTranscript || "",
-          audioUrl: rawReport.audioBase64 || rawReport.audioUrl || null,
-          audioBase64: rawReport.audioBase64 || null,
-          recommendedResource: aiResult.recommendedResource || "Rescue Boat",
-          assignedUnit: null,
-          priorityScore: scored.priorityScore,
-          scoreBreakdown: scored.scoreBreakdown,
-          corroboratingReportsCount: 1,
-          subReports: []
-        };
-
-        setIncidents((prev) => [newIncident, ...prev]);
-        finalIncidentId = newIncident.id;
+        setIncidents((prev) => [newCitizenIncident, ...prev]);
+        finalIncidentId = newCitizenIncident.id;
         if (supabaseService.isConfigured()) {
-          supabaseService.insertIncident(newIncident);
+          supabaseService.insertIncident(newCitizenIncident);
         }
       }
 

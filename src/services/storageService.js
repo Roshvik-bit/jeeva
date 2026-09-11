@@ -68,6 +68,60 @@ export const storageService = {
   },
 
   /**
+   * Automatically compress images (from File, Blob, or Data URL) to max 1000px and JPEG quality 0.8
+   * Keeps payload under 100KB so it never exceeds network/PostgreSQL limits
+   */
+  compressImageFile: (fileOrDataUrl, maxWidth = 1000, maxHeight = 1000, quality = 0.8) => {
+    return new Promise((resolve) => {
+      if (!fileOrDataUrl) return resolve(null);
+
+      const processImg = (dataUrl) => {
+        if (typeof window === "undefined" || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image")) {
+          return resolve(dataUrl);
+        }
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressed = canvas.toDataURL("image/jpeg", quality);
+          resolve(compressed);
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      };
+
+      if (typeof fileOrDataUrl === "string") {
+        processImg(fileOrDataUrl);
+      } else if (typeof Blob !== "undefined" && fileOrDataUrl instanceof Blob) {
+        const reader = new FileReader();
+        reader.onloadend = () => processImg(reader.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(fileOrDataUrl);
+      } else {
+        resolve(null);
+      }
+    });
+  },
+
+  /**
    * Convert Base64 data string to playable Blob URL
    */
   base64ToBlobUrl: (base64Data, mimeType = "audio/webm") => {

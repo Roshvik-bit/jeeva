@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useEmergency } from "../../context/EmergencyContext";
 import { SAMPLE_DISASTER_IMAGES, mockAiClassifier } from "../../services/mockAiClassifier";
+import { storageService } from "../../services/storageService";
 import { Camera, Image as ImageIcon, Sparkles, AlertTriangle, Check, RefreshCw, X } from "lucide-react";
 
 export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, setAiClassification, category, hasMedical }) => {
@@ -18,11 +19,8 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
         const response = await fetch(sample.url);
         if (response.ok) {
           const blob = await response.blob();
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setPhotoUrl(reader.result);
-          };
-          reader.readAsDataURL(blob);
+          const compressed = await storageService.compressImageFile(blob, 1000, 1000, 0.8);
+          setPhotoUrl(compressed || sample.url);
         } else {
           setPhotoUrl(sample.url);
         }
@@ -43,22 +41,19 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const dataUrl = event.target.result;
-      setPhotoUrl(dataUrl);
-      setIsAnalyzing(true);
+    setIsAnalyzing(true);
+    try {
+      const compressedDataUrl = await storageService.compressImageFile(file, 1000, 1000, 0.8);
+      const finalUrl = compressedDataUrl || file;
+      setPhotoUrl(finalUrl);
 
-      try {
-        const result = await mockAiClassifier.classifyDisasterImage(dataUrl, category, hasMedical);
-        setAiClassification(result);
-      } catch (err) {
-        console.error("AI inference error:", err);
-      } finally {
-        setIsAnalyzing(false);
-      }
-    };
-    reader.readAsDataURL(file);
+      const result = await mockAiClassifier.classifyDisasterImage(finalUrl, category, hasMedical);
+      setAiClassification(result);
+    } catch (err) {
+      console.error("AI inference error:", err);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleClearPhoto = () => {
