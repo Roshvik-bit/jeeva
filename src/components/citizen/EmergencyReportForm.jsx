@@ -34,6 +34,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
   const [aiClassification, setAiClassification] = useState(null);
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const [voiceAudioUrl, setVoiceAudioUrl] = useState(null);
+  const [voiceAudioBase64, setVoiceAudioBase64] = useState(null);
   const [location, setLocation] = useState({
     lat: 13.0827,
     lng: 80.2707,
@@ -59,6 +60,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
     setDescription("");
     setVoiceTranscript("");
     setVoiceAudioUrl(null);
+    setVoiceAudioBase64(null);
     setPhotoUrl(null);
     setAiClassification(null);
     setHasMedicalEmergency(false);
@@ -90,7 +92,8 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         photoUrl,
         aiClassification,
         voiceTranscript,
-        audioUrl: voiceAudioUrl
+        audioUrl: voiceAudioUrl,
+        audioBase64: voiceAudioBase64
       });
 
       const rawId = result?.incidentId || result?.report?.localId || `JEEVA-2026-${Math.floor(100 + Math.random() * 900)}`;
@@ -111,7 +114,9 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         address: location.address,
         lat: location.lat,
         lng: location.lng,
+        photoUrl,
         audioUrl: voiceAudioUrl,
+        audioBase64: voiceAudioBase64,
         voiceTranscript,
         isOffline: !isOnline,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -183,10 +188,23 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
             </span>
           </div>
 
+          {submittedReceipt.photoUrl && (
+            <div className="pt-2 text-left space-y-1">
+              <span className="text-[11px] font-bold text-slate-700 block">
+                {submittedReceipt.isOffline ? "📸 Field Photo (Stored Offline):" : "📸 Field Photo Attached:"}
+              </span>
+              <img
+                src={submittedReceipt.photoUrl}
+                alt="Captured Incident"
+                className="w-full h-32 object-cover rounded-lg border border-slate-200"
+              />
+            </div>
+          )}
+
           {submittedReceipt.audioUrl && (
             <div className="pt-2 text-left space-y-1">
               <span className="text-[11px] font-bold text-slate-700 block">
-                Recorded Voice Distress Note:
+                {submittedReceipt.isOffline ? "🎙️ Voice Audio Note (Stored Offline):" : "🎙️ Recorded Voice Distress Note:"}
               </span>
               <audio
                 src={submittedReceipt.audioUrl}
@@ -276,6 +294,8 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           setVoiceTranscript={setVoiceTranscript}
           audioUrl={voiceAudioUrl}
           setAudioUrl={setVoiceAudioUrl}
+          audioBase64={voiceAudioBase64}
+          setAudioBase64={setVoiceAudioBase64}
           category={category}
         />
       </div>

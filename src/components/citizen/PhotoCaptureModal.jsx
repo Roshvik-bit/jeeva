@@ -9,11 +9,27 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
   const [showPicker, setShowPicker] = useState(false);
 
   const handleSelectSample = async (sample) => {
-    setPhotoUrl(sample.url);
     setIsAnalyzing(true);
     setShowPicker(false);
 
     try {
+      // Try fetching and converting to base64 so it persists offline without internet
+      try {
+        const response = await fetch(sample.url);
+        if (response.ok) {
+          const blob = await response.blob();
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setPhotoUrl(reader.result);
+          };
+          reader.readAsDataURL(blob);
+        } else {
+          setPhotoUrl(sample.url);
+        }
+      } catch (fetchErr) {
+        setPhotoUrl(sample.url);
+      }
+
       const result = await mockAiClassifier.classifyDisasterImage(sample.url, sample.category, hasMedical);
       setAiClassification(result);
     } catch (err) {

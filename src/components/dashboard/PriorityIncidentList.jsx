@@ -118,6 +118,25 @@ export const PriorityIncidentList = ({
                   {routeStatus}
                 </span>
               </div>
+
+              {/* Media & Offline Sync Badges */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {incident.isOfflineSync && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 text-[10px] font-bold border border-amber-200">
+                    <span>⚡ Synced from Offline</span>
+                  </span>
+                )}
+                {incident.photoUrl && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-semibold border border-blue-200">
+                    <span>📸 Photo</span>
+                  </span>
+                )}
+                {(incident.audioUrl || incident.audioBase64) && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-semibold border border-purple-200">
+                    <span>🎙️ Voice Note</span>
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Priority Score Display */}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useEmergency } from "../../context/EmergencyContext";
+import { storageService } from "../../services/storageService";
 import { DispatchUnitModal } from "./DispatchUnitModal";
 import {
   AlertOctagon,
@@ -23,6 +24,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
   if (!isOpen || !incident) return null;
 
   const assignedUnitObj = rescueUnits.find((u) => u.id === incident.assignedUnit);
+  const audioSrc = incident.audioUrl || (incident.audioBase64 ? storageService.base64ToBlobUrl(incident.audioBase64) : null);
 
   const handleStatusChange = (newStatus) => {
     updateIncidentStatus(incident.id, newStatus);
@@ -48,6 +50,11 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
             <span className="font-mono text-xs font-semibold text-slate-500">
               #{incident.id}
             </span>
+            {incident.isOfflineSync && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                ⚡ Synced from Offline
+              </span>
+            )}
           </div>
 
           <button
@@ -342,13 +349,13 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                   </div>
                 </div>
               )}
-              {incident.audioUrl && (
+              {audioSrc && (
                 <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-slate-700 space-y-1">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900">
                     <Volume2 className="w-3.5 h-3.5 text-blue-600" />
                     <span>Recorded Civilian Audio Call:</span>
                   </div>
-                  <audio src={incident.audioUrl} controls className="w-full h-8 rounded" />
+                  <audio src={audioSrc} controls className="w-full h-8 rounded" />
                 </div>
               )}
             </div>

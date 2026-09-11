@@ -93,8 +93,8 @@ export const EmergencyProvider = ({ children }) => {
 
   // Synchronize queued offline reports to the cloud/master store
   const syncOfflineReports = useCallback(async () => {
-    const queue = storageService.getOfflineOutbox();
-    if (queue.length === 0) return;
+    const queue = await storageService.getOfflineOutboxAsync();
+    if (!queue || queue.length === 0) return;
 
     addToast({
       type: "info",
@@ -104,21 +104,32 @@ export const EmergencyProvider = ({ children }) => {
 
     let currentIncidents = [...incidents];
     let newlySyncedCount = 0;
+    let mediaSyncedCount = 0;
 
     for (const report of queue) {
-      // 1. Run AI vision classification if not already done
+      // 1. Reconstitute playable audio Blob URL from audioBase64
+      let restoredAudioUrl = report.audioUrl;
+      if (report.audioBase64) {
+        restoredAudioUrl = storageService.base64ToBlobUrl(report.audioBase64, report.audioMimeType || "audio/webm");
+      }
+
+      if (report.photoUrl || report.audioBase64 || restoredAudioUrl) {
+        mediaSyncedCount++;
+      }
+
+      // 2. Run AI vision classification if not already done
       let aiResult = report.aiClassification;
-      if (!aiResult) {
+      if (!aiResult && report.photoUrl) {
         aiResult = await mockAiClassifier.classifyDisasterImage(
-          report.photoUrl || report.category,
+          report.photoUrl,
           report.category,
           report.hasMedicalEmergency
         );
       }
 
-      // 2. Check for duplicate/corroborating cluster
+      // 3. Check for duplicate/corroborating cluster
       const dupCheck = duplicateDetector.processIncomingReport(
-        { ...report, aiClassification: aiResult },
+        { ...report, audioUrl: restoredAudioUrl, aiClassification: aiResult },
         currentIncidents
       );
 
@@ -153,8 +164,11 @@ export const EmergencyProvider = ({ children }) => {
           photoUrl: report.photoUrl || null,
           aiClassification: aiResult,
           voiceTranscript: report.voiceTranscript || "",
-          audioUrl: report.audioUrl || null,
-          recommendedResource: aiResult.recommendedResource || "Rescue Boat",
+          audioUrl: restoredAudioUrl,
+          audioBase64: report.audioBase64 || null,
+          isOfflineSync: true,
+          syncedAt: new Date().toISOString(),
+          recommendedResource: aiResult?.recommendedResource || "Rescue Boat",
           assignedUnit: null,
           priorityScore: scored.priorityScore,
           scoreBreakdown: scored.scoreBreakdown,
@@ -166,12 +180,27 @@ export const EmergencyProvider = ({ children }) => {
         resultingIncidentId = newIncident.id;
       }
 
+      // Optional remote API cloud sync if VITE_API_BASE_URL is configured
+      const apiBaseUrl = typeof import.meta !== "undefined" ? import.meta.env?.VITE_API_BASE_URL : null;
+      if (apiBaseUrl) {
+        try {
+          await fetch(`${apiBaseUrl}/incidents`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...report, syncedAt: new Date().toISOString() })
+          });
+        } catch (apiErr) {
+          console.warn("Backend API sync warning (saved to master state):", apiErr);
+        }
+      }
+
       // Update citizen's local tracking copy
-      storageService.updateUserReportStatus(report.localId, "Pending", null);
+      storageService.updateUserReportStatus(report.localId, "Pending (Synced)", null);
       newlySyncedCount++;
     }
 
     setIncidents(currentIncidents);
+    storageService.saveIncidents(currentIncidents);
     storageService.clearOfflineOutbox();
     setOfflineOutbox([]);
     setMyReports(storageService.getUserReports());
@@ -180,7 +209,7 @@ export const EmergencyProvider = ({ children }) => {
     addToast({
       type: "success",
       title: "Offline Sync Complete",
-      message: `Successfully synchronized ${newlySyncedCount} emergency alert(s) to Command Center!`
+      message: `Successfully synchronized ${newlySyncedCount} emergency alert(s) including ${mediaSyncedCount} photo & audio file(s) to Database!`
     });
   }, [incidents, addToast, playEmergencyAudio]);
 
@@ -194,12 +223,12 @@ export const EmergencyProvider = ({ children }) => {
         addToast({
           type: "success",
           title: "Network Connected",
-          message: "Online telemetry restored. Connecting to Rescue Command Cloud."
+          message: "Online telemetry restored. Connecting to Rescue Command Database."
         });
-        // Auto-sync if there are queued reports
-        setTimeout(() => {
-          const currentOutbox = storageService.getOfflineOutbox();
-          if (currentOutbox.length > 0) {
+        // Auto-sync queued reports with photos and audio
+        setTimeout(async () => {
+          const currentOutbox = await storageService.getOfflineOutboxAsync();
+          if (currentOutbox && currentOutbox.length > 0) {
             syncOfflineReports();
           }
         }, 300);
@@ -207,12 +236,38 @@ export const EmergencyProvider = ({ children }) => {
         addToast({
           type: "warning",
           title: "Offline Mode Active",
-          message: "All distress reports will be saved to local storage with pending sync."
+          message: "Reports, photos, and voice recordings will be saved locally on your device."
         });
       }
     },
     [isOnline, addToast, syncOfflineReports]
   );
+
+  // Auto-detect real browser online / offline connectivity changes
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log("Internet connection restored, triggering auto-sync...");
+      toggleOnlineStatus(true);
+    };
+
+    const handleOffline = () => {
+      console.log("Internet connection lost, activating offline mode...");
+      toggleOnlineStatus(false);
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    // Initial check
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setIsOnline(false);
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, [toggleOnlineStatus]);
 
   // Submit Emergency Report (Citizen action)
   const submitDistressReport = useCallback(
@@ -220,9 +275,22 @@ export const EmergencyProvider = ({ children }) => {
       const timestamp = new Date().toISOString();
 
       if (!isOnline) {
-        // Offline: save to local queue
+        let audioBase64 = rawReport.audioBase64;
+        // If audioBase64 is missing but audioUrl is present, attempt conversion
+        if (!audioBase64 && rawReport.audioUrl) {
+          try {
+            const res = await fetch(rawReport.audioUrl);
+            if (res.ok) {
+              const blob = await res.blob();
+              audioBase64 = await storageService.blobToBase64(blob);
+            }
+          } catch (e) {}
+        }
+
+        // Offline: save to local queue with full photo & audio persistence
         const queued = storageService.addOfflineReport({
           ...rawReport,
+          audioBase64,
           timestamp
         });
 
@@ -240,7 +308,7 @@ export const EmergencyProvider = ({ children }) => {
         addToast({
           type: "warning",
           title: "Saved to Offline Outbox",
-          message: "Distress report stored on device. Will auto-sync when network reconnects!"
+          message: "Distress report stored on device with photo and audio. Will auto-sync when network reconnects!"
         });
         return { success: true, isOffline: true, report: queued };
       }

@@ -101,6 +101,25 @@ export const MyReportsDrawer = ({ isOpen, onClose }) => {
                     {rep.description || rep.medicalDetails || "Emergency distress signal tagged."}
                   </p>
 
+                  {rep.photoUrl && (
+                    <div className="pt-1">
+                      <img
+                        src={rep.photoUrl}
+                        alt="Submitted Field Photo"
+                        className="w-full h-24 object-cover rounded-lg border border-slate-200"
+                      />
+                    </div>
+                  )}
+
+                  {rep.audioUrl && (
+                    <div className="pt-1 space-y-1">
+                      <span className="text-[10px] font-bold text-slate-600 flex items-center gap-1">
+                        <span>🎙️ Voice Distress Note:</span>
+                      </span>
+                      <audio src={rep.audioUrl} controls className="w-full h-7 rounded" />
+                    </div>
+                  )}
+
                   <div className="text-[11px] text-slate-500 font-mono space-y-0.5 pt-2 border-t border-slate-100">
                     <p>📍 {rep.location?.address || "GPS Location Tagged"}</p>
                     <p>👥 Affected: {rep.peopleCount || 1} person(s)</p>
