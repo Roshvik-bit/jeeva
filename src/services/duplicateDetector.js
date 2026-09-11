@@ -21,9 +21,20 @@ export const duplicateDetector = {
       return { isDuplicate: false };
     }
 
+    // Do not cluster false alarms with genuine disaster incidents
+    const incomingIsFalse = Boolean(
+      incomingReport.isFalseAlarm ||
+      incomingReport.aiClassification?.isFalseAlarm ||
+      incomingReport.aiClassification?.isValidDisaster === false
+    );
+    if (incomingIsFalse) {
+      return { isDuplicate: false };
+    }
+
     // Find closest open incident of the same category or extreme proximity
     for (const incident of currentIncidents) {
       if (incident.status === "Resolved") continue;
+      if (incident.isFalseAlarm || incident.aiClassification?.isFalseAlarm || incident.severity === "False Alarm") continue;
 
       const incLat = incident.location?.lat;
       const incLng = incident.location?.lng;

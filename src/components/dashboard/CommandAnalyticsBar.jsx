@@ -28,8 +28,12 @@ export const CommandAnalyticsBar = () => {
   ).length;
 
   const totalPeopleAffected = incidents
-    .filter((i) => i.status !== "Resolved")
+    .filter((i) => i.status !== "Resolved" && !i.isFalseAlarm && i.severity !== "False Alarm")
     .reduce((acc, curr) => acc + (curr.peopleCount || 0), 0);
+
+  const falseAlarmCount = incidents.filter(
+    (i) => i.isFalseAlarm || i.severity === "False Alarm" || i.priorityScore === 0
+  ).length;
 
   const unitsDeployed = rescueUnits.filter((u) => u.status !== "Available").length;
 
@@ -104,9 +108,16 @@ export const CommandAnalyticsBar = () => {
           <p className="text-2xl sm:text-3xl font-bold text-slate-900 font-mono mt-2">
             {activeIncidents}
           </p>
-          <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-slate-500">
-            <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-            <span>{resolvedCount} {t.resolvedSoFar || "resolved so far"}</span>
+          <div className="flex items-center justify-between gap-1.5 mt-1.5 text-[11px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+              <span>{resolvedCount} {t.resolvedSoFar || "resolved"}</span>
+            </span>
+            {falseAlarmCount > 0 && (
+              <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded">
+                ⚠️ {falseAlarmCount} False Alarm{falseAlarmCount > 1 ? "s" : ""} (0.0)
+              </span>
+            )}
           </div>
         </div>
 

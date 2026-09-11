@@ -2,6 +2,13 @@
  * Smart Priority Scoring Engine for JEEVA (SIH26013)
  * Multi-factor algorithmic ranking for disaster incidents
  * Normalized strictly to a 0.0 - 10.0 scale
+ * 
+ * Rules:
+ * 1. False Alarms / Fake Reports are STRICTLY assigned Priority Score: 0.0
+ * 2. Natural Disasters (Flood, Landslide, Cyclone, Earthquake, Collapse) receive elevated base priority
+ * 3. Health Issues & Acute Medical Emergencies receive prioritized triage weights (+2.5 - 3.5)
+ * 4. Fire Emergencies receive rapid escalation hazard weights (3.2)
+ * 5. Absolute Emergencies (Trapped victims >= 5, Combined Disaster + Medical, High Urgency) receive absolute priority boost (up to 10.0)
  */
 
 export const calculatePriorityScore = (incident) => {
@@ -11,91 +18,154 @@ export const calculatePriorityScore = (incident) => {
     category = "flood",
     aiClassification = {},
     timestamp = new Date().toISOString(),
-    corroboratingReportsCount = 1
+    corroboratingReportsCount = 1,
+    isAbsoluteEmergency = false
   } = incident;
 
-  // 0. False Alarm Check: Deprioritize invalid non-disaster photos
+  // 0. False Alarm / Fake Report Check: Deprioritize completely to 0.0
   const isFalseAlarm = Boolean(
     aiClassification?.isFalseAlarm ||
     aiClassification?.isValidDisaster === false ||
+    aiClassification?.isFakeReport ||
     aiClassification?.urgencyAssessment === "FALSE_ALARM_DISMISSED"
   );
 
   if (isFalseAlarm) {
-    const reason = aiClassification?.verificationReason || "Image verification flagged as non-emergency photo.";
+    const reason = aiClassification?.verificationReason || "Flagged as false alarm or non-emergency submission.";
     return {
-      priorityScore: 0.5,
+      priorityScore: 0.0,
       severity: "False Alarm",
       isFalseAlarm: true,
+      isRealReport: false,
       scoreBreakdown: {
         peopleScore: 0,
         medicalScore: 0,
         categoryScore: 0,
-        aiHazardScore: 0.5,
+        aiHazardScore: 0,
+        absoluteEmergencyBonus: 0,
         recencyScore: 0,
         corroborationScore: 0,
-        explanation: `⚠️ Flagged as False Alarm (Score 0.5/10): ${reason} Deprioritized to bottom of queue.`
+        explanation: `⚠️ Flagged as False Alarm / Fake Report (Priority Score: 0.0/10). Reason: ${reason} Deprioritized to bottom of queue.`
       }
     };
   }
 
-  // 1. People / Victims Weight (Max: 3.5)
-  let peopleScore = 1.0;
-  if (peopleCount >= 20) peopleScore = 3.5;
-  else if (peopleCount >= 10) peopleScore = 3.0;
-  else if (peopleCount >= 5) peopleScore = 2.5;
-  else if (peopleCount >= 2) peopleScore = 1.8;
+  const catLower = (category || "").toLowerCase();
 
-  // 2. Medical Urgency Weight (Max: 2.5)
-  const medicalScore = hasMedicalEmergency ? 2.5 : 0.0;
+  // Category classification helpers
+  const isNaturalDisaster = [
+    "flood",
+    "landslide",
+    "cyclone",
+    "earthquake",
+    "tsunami",
+    "collapse"
+  ].includes(catLower);
+  const isHealthEmergency = catLower === "medical";
+  const isFireEmergency = catLower === "fire";
+  const isTrappedEmergency = catLower === "trapped";
 
-  // 3. Category Hazard Base Weight (Max: 2.0)
-  let categoryScore = 1.0;
-  if (category === "trapped") categoryScore = 2.0;          // People Trapped (Immediate life safety risk)
-  else if (category === "medical") categoryScore = 2.0;      // Medical Emergency (Immediate life risk)
-  else if (category === "fire") categoryScore = 1.8;         // Active Fire (Rapid escalation)
-  else if (category === "flood") categoryScore = 1.5;        // Flood / Flash Inundation
-  else if (category === "bridge") categoryScore = 1.3;       // Damaged Bridge / Structural collapse
-  else if (category === "blocked_road") categoryScore = 0.8; // Blocked Road / Obstruction
+  // 1. Category Hazard Base Weight (Max: 3.5 pts)
+  // Higher priority for Natural Disasters, Health Issues, Fire Emergencies, and Trapped Civilians
+  let categoryScore = 1.5;
+  if (isHealthEmergency) {
+    categoryScore = 3.5; // Direct acute medical hazard / life preservation
+  } else if (isFireEmergency) {
+    categoryScore = 3.2; // Rapidly advancing fire / combustion / smoke inhalation
+  } else if (isTrappedEmergency) {
+    categoryScore = 3.4; // Entombed or stranded civilians needing extraction
+  } else if (isNaturalDisaster) {
+    categoryScore = 3.0; // Flood, landslide, cyclone, earthquake, collapse
+  } else if (catLower === "bridge") {
+    categoryScore = 2.2; // Structural bridge collapse
+  } else if (catLower === "blocked_road") {
+    categoryScore = 1.4; // Transit obstruction
+  }
 
-  // 4. AI Hazard Severity Weight (Max: 1.5)
-  const hazardSeverity = aiClassification?.hazardSeverity != null ? aiClassification.hazardSeverity : 5.0;
-  const aiHazardScore = Math.min(1.5, Number(((hazardSeverity / 10) * 1.5).toFixed(1)));
+  // 2. Health & Medical Urgency Weight (Max: 2.5 pts)
+  const medicalScore = (hasMedicalEmergency || isHealthEmergency) ? 2.5 : 0.0;
 
-  // 5. Recency Factor (Max: 1.0)
+  // 3. People / Victims Danger Weight (Max: 2.5 pts)
+  let peopleScore = 0.8;
+  const count = Math.max(1, Number(peopleCount) || 1);
+  if (count >= 20) peopleScore = 2.5;
+  else if (count >= 10) peopleScore = 2.0;
+  else if (count >= 5) peopleScore = 1.6;
+  else if (count >= 2) peopleScore = 1.2;
+
+  // 4. AI Hazard Severity Weight (Max: 1.5 pts)
+  const rawAiSeverity = aiClassification?.hazardSeverity != null
+    ? Number(aiClassification.hazardSeverity)
+    : (isNaturalDisaster || isFireEmergency || isHealthEmergency ? 8.0 : 5.5);
+  const aiHazardScore = Number(((Math.min(10, Math.max(0, rawAiSeverity)) / 10) * 1.5).toFixed(1));
+
+  // 5. Absolute Emergency Multiplier / Bonus (Max: 1.5 pts)
+  // Triggered when multiple life-critical conditions coincide:
+  // - Trapped victims >= 5
+  // - Natural disaster or Fire combined with active Medical Emergency
+  // - Massive casualty footprint (count >= 15)
+  // - Explicit absolute emergency flag from triage AI
+  const isAbsolute = Boolean(
+    isAbsoluteEmergency ||
+    (hasMedicalEmergency && (isNaturalDisaster || isFireEmergency || isTrappedEmergency)) ||
+    (isTrappedEmergency && count >= 5) ||
+    (count >= 15 && isNaturalDisaster) ||
+    aiClassification?.urgencyAssessment === "CRITICAL_IMMEDIATE_ACTION" ||
+    aiClassification?.urgencyAssessment === "LIFE_THREATENING_MEDICAL"
+  );
+
+  const absoluteEmergencyBonus = isAbsolute ? 1.5 : 0.0;
+
+  // 6. Recency Factor (Max: 0.5 pt)
   const elapsedMinutes = Math.max(0, (Date.now() - new Date(timestamp).getTime()) / (1000 * 60));
-  let recencyScore = 1.0;
-  if (elapsedMinutes > 120) recencyScore = 0.2;
-  else if (elapsedMinutes > 60) recencyScore = 0.5;
-  else if (elapsedMinutes > 30) recencyScore = 0.8;
+  let recencyScore = 0.5;
+  if (elapsedMinutes > 180) recencyScore = 0.1;
+  else if (elapsedMinutes > 60) recencyScore = 0.25;
+  else if (elapsedMinutes > 30) recencyScore = 0.4;
 
-  // 6. Corroborating duplicate reports bonus (Max: 1.0)
-  let corroborationScore = 0;
-  if (corroboratingReportsCount >= 4) corroborationScore = 1.0;
-  else if (corroboratingReportsCount >= 2) corroborationScore = 0.5;
+  // 7. Corroborating Duplicate Reports Factor (Max: 0.5 pt)
+  let corroborationScore = 0.0;
+  if (corroboratingReportsCount >= 4) corroborationScore = 0.5;
+  else if (corroboratingReportsCount >= 2) corroborationScore = 0.25;
 
-  // Total Score (0.0 - 10.0 scale)
-  const rawScore = peopleScore + medicalScore + categoryScore + aiHazardScore + recencyScore + corroborationScore;
-  const priorityScore = Number(Math.min(10.0, Math.max(1.0, rawScore)).toFixed(1));
+  // Total Score strictly normalized between 1.0 and 10.0 for genuine emergencies
+  const rawTotal = categoryScore + medicalScore + peopleScore + aiHazardScore + absoluteEmergencyBonus + recencyScore + corroborationScore;
+  const priorityScore = Number(Math.min(10.0, Math.max(1.0, rawTotal)).toFixed(1));
 
-  // Determine qualitative severity label based on accurate thresholds
+  // Determine qualitative severity label based on standard emergency response tiers
   let severity = "Low";
   if (priorityScore >= 8.5) severity = "Critical";
   else if (priorityScore >= 6.5) severity = "High";
   else if (priorityScore >= 4.0) severity = "Medium";
 
-  const explanation = `Score ${priorityScore}/10: ${peopleCount} victim(s) (${peopleScore} pts) + ${
-    hasMedicalEmergency ? "Medical Emergency (2.5 pts)" : "No Medical Triage (0 pts)"
-  } + Category ${category} (${categoryScore} pts) + AI Hazard (${aiHazardScore} pts) + Recency (${recencyScore} pts) + Corroboration (${corroborationScore} pts)`;
+  const disasterTypeTags = [];
+  if (isNaturalDisaster) disasterTypeTags.push("Natural Disaster");
+  if (isHealthEmergency || hasMedicalEmergency) disasterTypeTags.push("Health Emergency");
+  if (isFireEmergency) disasterTypeTags.push("Fire Emergency");
+  if (isAbsolute) disasterTypeTags.push("Absolute Emergency");
+
+  const explanation = `Score ${priorityScore}/10 [${severity}]: Category ${category} (${categoryScore} pts) + ${
+    hasMedicalEmergency ? "Medical Distress (2.5 pts)" : "No Medical (0 pts)"
+  } + Victims ${count} (${peopleScore} pts) + AI Hazard (${aiHazardScore} pts)${
+    absoluteEmergencyBonus > 0 ? ` + Absolute Emergency (+${absoluteEmergencyBonus} pts)` : ""
+  } + Recency/Cluster (${(recencyScore + corroborationScore).toFixed(1)} pts)`;
 
   return {
     priorityScore,
     severity,
+    isFalseAlarm: false,
+    isRealReport: true,
+    isNaturalDisaster,
+    isHealthEmergency: Boolean(hasMedicalEmergency || isHealthEmergency),
+    isFireEmergency,
+    isAbsoluteEmergency: isAbsolute,
+    disasterTypeTags,
     scoreBreakdown: {
-      peopleScore,
-      medicalScore,
       categoryScore,
+      medicalScore,
+      peopleScore,
       aiHazardScore,
+      absoluteEmergencyBonus,
       recencyScore,
       corroborationScore,
       explanation

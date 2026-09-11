@@ -180,14 +180,18 @@ export const EmergencyProvider = ({ children }) => {
         mediaSyncedCount++;
       }
 
-      // 2. Run AI vision classification if not already done
+      // 2. Run AI multi-modal verification (statement + photo) if not already done
       let aiResult = report.aiClassification;
-      if (!aiResult && report.photoUrl) {
-        aiResult = await mockAiClassifier.classifyDisasterImage(
-          report.photoUrl,
-          report.category,
-          report.hasMedicalEmergency
-        );
+      if (!aiResult || aiResult.isFalseAlarm === undefined) {
+        aiResult = await mockAiClassifier.verifyReport({
+          title: report.title,
+          description: report.description,
+          voiceTranscript: report.voiceTranscript,
+          category: report.category,
+          hasMedicalEmergency: report.hasMedicalEmergency,
+          peopleCount: report.peopleCount,
+          photoUrl: report.photoUrl
+        });
       }
 
       // Upload offline media to Supabase Storage first so database row contains only public URLs
@@ -212,7 +216,7 @@ export const EmergencyProvider = ({ children }) => {
 
       const activePlayableAudio = syncedAudioUrl || restoredAudioUrl || null;
 
-      // 3. Check for duplicate/corroborating cluster
+      // 3. Check for duplicate/corroborating cluster (false alarms are never clustered)
       const dupCheck = duplicateDetector.processIncomingReport(
         { ...report, photoUrl: syncedPhotoUrl || report.photoUrl, audioUrl: activePlayableAudio, aiClassification: aiResult },
         currentIncidents
@@ -247,7 +251,7 @@ export const EmergencyProvider = ({ children }) => {
           title: report.title || `${report.category.toUpperCase()} Distress Alert at ${report.location.address}`,
           category: report.category,
           severity: scored.severity,
-          status: "Pending",
+          status: scored.isFalseAlarm ? "Resolved" : "Pending",
           timestamp: report.timestamp || new Date().toISOString(),
           location: report.location,
           peopleCount: report.peopleCount || 1,
@@ -264,6 +268,10 @@ export const EmergencyProvider = ({ children }) => {
           recommendedResource: aiResult?.recommendedResource || "Rescue Boat",
           assignedUnit: null,
           priorityScore: scored.priorityScore,
+          isFalseAlarm: scored.isFalseAlarm,
+          isRealReport: scored.isRealReport,
+          isAbsoluteEmergency: scored.isAbsoluteEmergency,
+          disasterTypeTags: scored.disasterTypeTags || [],
           scoreBreakdown: scored.scoreBreakdown,
           corroboratingReportsCount: 1,
           subReports: []
@@ -409,14 +417,18 @@ export const EmergencyProvider = ({ children }) => {
         return { success: true, isOffline: true, report: queued };
       }
 
-      // Online: Real-time processing
+      // Online: Real-time multi-modal AI verification (statement + photo)
       let aiResult = rawReport.aiClassification;
-      if (!aiResult) {
-        aiResult = await mockAiClassifier.classifyDisasterImage(
-          rawReport.photoUrl || rawReport.category,
-          rawReport.category,
-          rawReport.hasMedicalEmergency
-        );
+      if (!aiResult || aiResult.isFalseAlarm === undefined) {
+        aiResult = await mockAiClassifier.verifyReport({
+          title: rawReport.title,
+          description: rawReport.description,
+          voiceTranscript: rawReport.voiceTranscript,
+          category: rawReport.category,
+          hasMedicalEmergency: rawReport.hasMedicalEmergency,
+          peopleCount: rawReport.peopleCount,
+          photoUrl: rawReport.photoUrl
+        });
       }
 
       // Generate unique incident ID upfront
@@ -464,7 +476,7 @@ export const EmergencyProvider = ({ children }) => {
         title: rawReport.title || `${rawReport.category.toUpperCase()} Crisis at ${rawReport.location.address}`,
         category: rawReport.category,
         severity: scored.severity,
-        status: "Pending",
+        status: scored.isFalseAlarm ? "Resolved" : "Pending",
         timestamp,
         location: rawReport.location,
         peopleCount: rawReport.peopleCount || 1,
@@ -479,6 +491,11 @@ export const EmergencyProvider = ({ children }) => {
         recommendedResource: aiResult?.recommendedResource || "Rescue Boat",
         assignedUnit: null,
         priorityScore: scored.priorityScore,
+        isFalseAlarm: scored.isFalseAlarm,
+        isRealReport: scored.isRealReport,
+        isAbsoluteEmergency: scored.isAbsoluteEmergency,
+        disasterTypeTags: scored.disasterTypeTags || [],
+        verificationReason: aiResult?.verificationReason || "",
         scoreBreakdown: scored.scoreBreakdown,
         corroboratingReportsCount: 1,
         subReports: []
@@ -526,22 +543,43 @@ export const EmergencyProvider = ({ children }) => {
       storageService.addUserReport({
         id: finalIncidentId,
         ...rawReport,
+        priorityScore: scored.priorityScore,
+        severity: scored.severity,
+        isFalseAlarm: scored.isFalseAlarm,
         photoUrl: publicPhotoUrl || rawReport.photoUrl,
         audioUrl: publicAudioUrl || activePlayableAudio,
         audioBase64: null,
         timestamp,
-        status: "Pending"
+        status: scored.isFalseAlarm ? "Resolved (False Alarm)" : "Pending"
       });
       setMyReports(storageService.getUserReports());
 
-      playEmergencyAudio("siren");
-      addToast({
-        type: "success",
-        title: "SOS Alert Dispatched!",
-        message: `Incident #${finalIncidentId} logged. Rescue teams alerted on operations map.`
-      });
+      if (scored.isFalseAlarm) {
+        playEmergencyAudio("beep");
+        addToast({
+          type: "warning",
+          title: "⚠️ Report Flagged as False Alarm (Score 0.0)",
+          message: "Report identified as a non-emergency or false alarm. Priority Score set strictly to 0.0/10."
+        });
+      } else {
+        playEmergencyAudio("siren");
+        addToast({
+          type: "success",
+          title: scored.isAbsoluteEmergency ? "🚨 Absolute Emergency Dispatched!" : "SOS Alert Dispatched!",
+          message: `Incident #${finalIncidentId} logged (Priority: ${scored.priorityScore}/10). Rescue teams alerted on operations map.`
+        });
+      }
 
-      return { success: true, isOffline: false, incidentId: finalIncidentId, isMerged };
+      return {
+        success: true,
+        isOffline: false,
+        incidentId: finalIncidentId,
+        isMerged,
+        isFalseAlarm: scored.isFalseAlarm,
+        priorityScore: scored.priorityScore,
+        severity: scored.severity,
+        verificationReason: aiResult?.verificationReason
+      };
     },
     [isOnline, incidents, addToast, playEmergencyAudio]
   );

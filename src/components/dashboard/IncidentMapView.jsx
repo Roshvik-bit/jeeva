@@ -158,16 +158,19 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
       const isSelected = selectedIncidentId === inc.id;
       const isCritical = inc.severity === "Critical" && inc.status !== "Resolved";
       const isResolved = inc.status === "Resolved";
+      const isFalse = inc.isFalseAlarm || inc.severity === "False Alarm" || inc.priorityScore === 0;
 
       // Marker color palette
       let pinColor = "#f59e0b"; // Medium = amber
       let glowClass = "";
-      if (isResolved) {
+      if (isFalse) {
+        pinColor = "#64748b"; // Slate / grey for false alarms
+      } else if (isResolved) {
         pinColor = "#10b981"; // Emerald
-      } else if (inc.severity === "Critical") {
+      } else if (inc.severity === "Critical" || inc.priorityScore >= 8.5 || inc.isAbsoluteEmergency) {
         pinColor = "#ef4444"; // Rose/Red
         glowClass = "animate-radar";
-      } else if (inc.severity === "High") {
+      } else if (inc.severity === "High" || inc.priorityScore >= 6.5) {
         pinColor = "#f97316"; // Orange
       } else if (inc.severity === "Low") {
         pinColor = "#38bdf8"; // Blue
@@ -178,7 +181,7 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
         className: "custom-incident-pin",
         html: `
           <div style="position: relative; width: 34px; height: 34px; cursor: pointer;">
-            ${isCritical
+            ${isCritical && !isFalse
             ? `<div style="position: absolute; inset: -6px; border-radius: 9999px; background: rgba(239, 68, 68, 0.4); animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>`
             : ""
           }
@@ -199,7 +202,7 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
               transform: ${isSelected ? "scale(1.2)" : "scale(1)"};
               transition: transform 0.2s ease;
             ">
-              ${inc.priorityScore || "!"}
+              ${isFalse ? "0.0" : (inc.priorityScore || "!")}
             </div>
             ${(inc.corroboratingReportsCount || 1) > 1
             ? `<div style="position: absolute; top: -4px; right: -4px; background: #0f172a; border: 1px solid #f59e0b; color: #f59e0b; border-radius: 9999px; width: 16px; height: 16px; font-size: 9px; font-weight: bold; display: flex; align-items: center; justify-content: center;">${inc.corroboratingReportsCount}</div>`
@@ -218,10 +221,10 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
         <div style="padding: 12px; font-family: system-ui, -apple-system, sans-serif; width: 240px; color: #1F2937;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
             <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: ${pinColor}; letter-spacing: 0.05em;">
-              ${inc.severity} • ${inc.category}
+              ${isFalse ? "⚠️ FALSE ALARM" : `${inc.severity} • ${inc.category}`}
             </span>
             <span style="font-size: 10px; font-family: monospace; font-weight: 700; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #334155; border: 1px solid #e2e8f0;">
-              Score: ${inc.priorityScore}/10
+              Score: ${isFalse ? "0.0/10" : `${inc.priorityScore}/10`}
             </span>
           </div>
           <h4 style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; line-height: 1.3;">

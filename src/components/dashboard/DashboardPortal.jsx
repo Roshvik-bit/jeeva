@@ -78,8 +78,13 @@ export const DashboardPortal = () => {
         }
 
         // Severity
-        if (selectedSeverity !== "all" && inc.severity !== selectedSeverity) {
-          return false;
+        if (selectedSeverity !== "all") {
+          if (selectedSeverity === "False Alarm") {
+            const isFalse = inc.isFalseAlarm || inc.severity === "False Alarm" || inc.priorityScore === 0;
+            if (!isFalse) return false;
+          } else if (inc.severity !== selectedSeverity) {
+            return false;
+          }
         }
 
         // Alerts tab filter (only Critical/High)

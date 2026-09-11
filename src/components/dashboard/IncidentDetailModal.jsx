@@ -99,17 +99,25 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
         {/* Modal Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center gap-2.5">
-            <span
-              className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                incident.severity === "Critical"
-                  ? "bg-red-50 text-red-700 border-red-200"
-                  : incident.severity === "High"
-                  ? "bg-orange-50 text-orange-700 border-orange-200"
-                  : "bg-amber-50 text-amber-700 border-amber-200"
-              }`}
-            >
-              {incident.severity || "Medium"} Severity
-            </span>
+            {incident.isFalseAlarm || incident.severity === "False Alarm" ? (
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
+                ⚠️ False Alarm (Score 0.0)
+              </span>
+            ) : (
+              <span
+                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                  incident.isAbsoluteEmergency || incident.priorityScore >= 8.5
+                    ? "bg-red-100 text-red-800 border-red-300 animate-pulse font-extrabold"
+                    : incident.severity === "Critical"
+                    ? "bg-red-50 text-red-700 border-red-200"
+                    : incident.severity === "High"
+                    ? "bg-orange-50 text-orange-700 border-orange-200"
+                    : "bg-amber-50 text-amber-700 border-amber-200"
+                }`}
+              >
+                {incident.isAbsoluteEmergency ? "🚨 Absolute Emergency" : `${incident.severity || "Medium"} Severity`}
+              </span>
+            )}
             <span className="font-mono text-xs font-semibold text-slate-500">
               #{incident.id}
             </span>
@@ -151,8 +159,14 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
             {/* Priority Score */}
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <p className="text-[10px] uppercase font-bold text-slate-500">{t.priorityScore || "Priority Score"}</p>
-              <p className="text-xl font-bold font-mono text-red-600 mt-0.5">
-                {incident.priorityScore}/10
+              <p className={`text-xl font-bold font-mono mt-0.5 ${
+                incident.isFalseAlarm || incident.severity === "False Alarm"
+                  ? "text-slate-500"
+                  : incident.priorityScore >= 8.5
+                  ? "text-red-600 font-extrabold"
+                  : "text-orange-600"
+              }`}>
+                {incident.isFalseAlarm || incident.severity === "False Alarm" ? "0.0/10" : `${incident.priorityScore}/10`}
               </p>
             </div>
 
@@ -175,50 +189,109 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
             {/* Status */}
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <p className="text-[10px] uppercase font-bold text-slate-500">{t.statusLabel || "Status"}</p>
-              <p className="text-xs font-bold font-mono text-blue-700 mt-1.5 uppercase">
-                {incident.status === "Resolved" ? (t.statusResolved || "Resolved") : incident.status}
+              <p className={`text-xs font-bold font-mono mt-1.5 uppercase ${
+                incident.isFalseAlarm ? "text-amber-700" : "text-blue-700"
+              }`}>
+                {incident.isFalseAlarm ? "False Alarm" : incident.status === "Resolved" ? (t.statusResolved || "Resolved") : incident.status}
               </p>
             </div>
           </div>
 
           {/* AI-Assisted Incident Analysis Panel */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-                  <Sparkles className="w-4 h-4" />
+          {incident.isFalseAlarm || incident.severity === "False Alarm" ? (
+            <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-300 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-200 text-amber-900 flex items-center justify-center font-bold">
+                    ⚠️
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-amber-950">
+                      AI Authenticity: False Alarm / Fake Report
+                    </h4>
+                    <p className="text-[11px] text-amber-800">
+                      Automated statement & visual triage classified as non-emergency
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    AI-assisted incident analysis
-                  </h4>
-                  <p className="text-[11px] text-slate-500">
-                    Automated multi-factor operational ranking
-                  </p>
+                <div className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 font-mono font-bold text-slate-800 text-sm">
+                  Priority: 0.0/10
                 </div>
               </div>
 
-              {/* Priority Score Gauge Pill */}
-              <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-slate-200 self-start sm:self-auto shadow-sm">
-                <div className="text-right">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 block">
-                    Priority Score
-                  </span>
-                  <span className="text-xs font-bold text-slate-800">
-                    {incident.priorityScore >= 8.5 ? "Critical Urgency" : incident.priorityScore >= 6.5 ? "High Urgency" : "Moderate"}
-                  </span>
+              <div className="p-3 bg-white/90 rounded-lg border border-amber-200 text-xs text-amber-900 space-y-1">
+                <span className="font-bold block">Verification Analysis:</span>
+                <p className="leading-relaxed">
+                  {incident.verificationReason || incident.aiClassification?.verificationReason || "AI analysis classified statement/image as a false alarm or non-hazard situation."}
+                </p>
+              </div>
+
+              <p className="text-[11px] text-amber-800 italic">
+                Note: Priority score is strictly 0.0/10. Dispatching rescue units to this report is suppressed to protect frontline response availability.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      AI-assisted incident analysis
+                    </h4>
+                    <p className="text-[11px] text-slate-500">
+                      Automated multi-factor operational ranking
+                    </p>
+                  </div>
                 </div>
-                <div className={`px-2.5 py-1 rounded-lg font-mono font-bold text-base border ${
-                  incident.priorityScore >= 8.5
-                    ? "bg-red-50 border-red-200 text-red-700"
-                    : incident.priorityScore >= 6.5
-                    ? "bg-orange-50 border-orange-200 text-orange-700"
-                    : "bg-blue-50 border-blue-200 text-blue-700"
-                }`}>
-                  {incident.priorityScore}/10
+
+                {/* Priority Score Gauge Pill */}
+                <div className="flex items-center gap-3 bg-white px-3 py-1.5 rounded-xl border border-slate-200 self-start sm:self-auto shadow-sm">
+                  <div className="text-right">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 block">
+                      Priority Score
+                    </span>
+                    <span className="text-xs font-bold text-slate-800">
+                      {incident.priorityScore >= 8.5 ? "Critical Urgency" : incident.priorityScore >= 6.5 ? "High Urgency" : "Moderate"}
+                    </span>
+                  </div>
+                  <div className={`px-2.5 py-1 rounded-lg font-mono font-bold text-base border ${
+                    incident.priorityScore >= 8.5
+                      ? "bg-red-50 border-red-200 text-red-700"
+                      : incident.priorityScore >= 6.5
+                      ? "bg-orange-50 border-orange-200 text-orange-700"
+                      : "bg-blue-50 border-blue-200 text-blue-700"
+                  }`}>
+                    {incident.priorityScore}/10
+                  </div>
                 </div>
               </div>
-            </div>
+
+              {/* Disaster Domain Tags in Modal */}
+              <div className="flex flex-wrap gap-1.5">
+                {["flood", "landslide", "cyclone", "collapse", "earthquake"].includes(incident.category?.toLowerCase()) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-900 text-[11px] font-bold border border-blue-300">
+                    🌊 Natural Disaster
+                  </span>
+                )}
+                {incident.category?.toLowerCase() === "fire" && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 text-red-900 text-[11px] font-bold border border-red-300">
+                    🔥 Fire Emergency
+                  </span>
+                )}
+                {(incident.category?.toLowerCase() === "medical" || incident.hasMedicalEmergency) && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-100 text-rose-900 text-[11px] font-bold border border-rose-300">
+                    🚑 Health / Medical Distress
+                  </span>
+                )}
+                {incident.isAbsoluteEmergency && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-600 text-white text-[11px] font-extrabold animate-pulse">
+                    🚨 Absolute Emergency
+                  </span>
+                )}
+              </div>
 
             {/* 4-Factor AI Breakdown (Grid 2x2) */}
             <div className="space-y-1.5">
@@ -343,6 +416,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
               </div>
             </div>
           </div>
+          )}
 
           {/* Photo & Image Analysis Card */}
           {incident.photoUrl && (

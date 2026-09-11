@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useEmergency } from "../../context/EmergencyContext";
 import { storageService, getPlayableAudioUrl } from "../../services/storageService";
+import { verifyReportStatement } from "../../services/mockAiClassifier";
 import { LocationPicker } from "./LocationPicker";
 import { PhotoCaptureModal } from "./PhotoCaptureModal";
 import { VoiceRecorderModal } from "./VoiceRecorderModal";
@@ -20,7 +21,11 @@ import {
   ArrowRight,
   Camera,
   Mic,
-  ShieldAlert
+  ShieldAlert,
+  Sparkles,
+  ShieldCheck,
+  AlertOctagon,
+  Zap
 } from "lucide-react";
 
 export const EmergencyReportForm = ({ onSubmitted }) => {
@@ -73,6 +78,64 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
     setSubmittedReceipt(null);
   };
 
+  const handleQuickScenario = (type) => {
+    if (type === "flood_real") {
+      setCategory("flood");
+      setTitle("Severe Flood Inundation - Water Level Rising Above 5 Feet");
+      setDescription("River overflowed banks. Ground floor completely submerged. 6 residents trapped on terrace, water rising rapidly.");
+      setPeopleCount(6);
+      setHasMedicalEmergency(false);
+      setMedicalDetails("");
+      setAiClassification(null);
+    } else if (type === "fire_real") {
+      setCategory("fire");
+      setTitle("Massive Commercial Building Fire with Trapped Workers");
+      setDescription("Heavy smoke billowing from 2nd floor, open flames spreading rapidly. Risk of gas cylinder explosion.");
+      setPeopleCount(4);
+      setHasMedicalEmergency(true);
+      setMedicalDetails("2 people suffering from severe smoke inhalation and burns.");
+      setAiClassification(null);
+    } else if (type === "medical_real") {
+      setCategory("medical");
+      setTitle("Acute Cardiac Arrest in Inaccessible Waterlogged Home");
+      setDescription("Elderly family member collapsed, unconscious with weak pulse. Ambulance cannot reach due to 3ft standing water.");
+      setPeopleCount(2);
+      setHasMedicalEmergency(true);
+      setMedicalDetails("Unconscious, cardiac history, oxygen level dropping.");
+      setAiClassification(null);
+    } else if (type === "prank_fake") {
+      setCategory("flood");
+      setTitle("Testing app prank haha lol");
+      setDescription("This is just a fake prank test haha lol nothing is wrong just fooling around with friends.");
+      setPeopleCount(1);
+      setHasMedicalEmergency(false);
+      setMedicalDetails("");
+      setAiClassification({
+        isFalseAlarm: true,
+        isFakeReport: true,
+        isValidDisaster: false,
+        hazardSeverity: 0.0,
+        verificationReason: "Flagged as Fake Report: Statement contains prank/joke markers ('prank haha lol'). Priority Score set to 0.0/10."
+      });
+    } else if (type === "pizza_fake") {
+      setCategory("trapped");
+      setTitle("Need pizza delivered to my house urgent");
+      setDescription("I am so hungry please send a delivery boy with pizza and cold drinks to my house asap.");
+      setPeopleCount(1);
+      setHasMedicalEmergency(false);
+      setMedicalDetails("");
+      setAiClassification({
+        isFalseAlarm: true,
+        isFakeReport: true,
+        isValidDisaster: false,
+        hazardSeverity: 0.0,
+        verificationReason: "Flagged as False Alarm: Statement is a non-emergency food delivery request ('pizza'). Priority Score set to 0.0/10."
+      });
+    }
+  };
+
+  const currentStatementCheck = verifyReportStatement([title, description, voiceTranscript].filter(Boolean).join(" "));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -123,6 +186,15 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
 
       const currentCategoryLabel = categories.find((c) => c.id === category)?.label || category;
 
+      const isFalse = Boolean(
+        result?.isFalseAlarm ||
+        aiClassification?.isFalseAlarm ||
+        currentStatementCheck.isFakeStatement
+      );
+
+      const calculatedScore = isFalse ? 0.0 : (result?.priorityScore != null ? result.priorityScore : 7.5);
+      const calculatedSeverity = isFalse ? "False Alarm" : (result?.severity || "High");
+
       setSubmittedReceipt({
         incidentId: incidentIdFormatted,
         title: finalTitle,
@@ -139,8 +211,10 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         audioBlob: voiceAudioBlob,
         voiceTranscript,
         isOffline: !isOnline,
-        isFalseAlarm: Boolean(aiClassification?.isFalseAlarm),
-        verificationReason: aiClassification?.verificationReason,
+        isFalseAlarm: isFalse,
+        priorityScore: calculatedScore,
+        severity: calculatedSeverity,
+        verificationReason: result?.verificationReason || aiClassification?.verificationReason || currentStatementCheck.reason || (isFalse ? "Classified as False Alarm: Non-emergency report." : "Verified genuine disaster emergency."),
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       });
 
@@ -154,24 +228,74 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
 
   // Receipt / Confirmation Success Screen
   if (submittedReceipt) {
+    const isFalse = Boolean(submittedReceipt.isFalseAlarm);
+
     return (
       <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-7 space-y-5 text-center shadow-sm">
         <div className="flex flex-col items-center">
-          <div className="w-14 h-14 rounded-full bg-green-50 text-green-600 flex items-center justify-center border border-green-200 mb-3">
-            <CheckCircle2 className="w-8 h-8" />
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center border mb-3 ${
+            isFalse
+              ? "bg-amber-50 text-amber-600 border-amber-300 ring-4 ring-amber-50"
+              : "bg-green-50 text-green-600 border-green-200 ring-4 ring-green-50"
+          }`}>
+            {isFalse ? <AlertTriangle className="w-8 h-8" /> : <CheckCircle2 className="w-8 h-8" />}
           </div>
 
-          <h2 className="text-2xl font-bold text-slate-900">
-            {t.reportSubmittedTitle || "Report Submitted Successfully"}
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-600 max-w-sm mt-1">
-            {t.reportSubmittedDesc || "Your emergency alert has been recorded and transmitted to the rescue command center."}
-          </p>
+          <div className="space-y-1">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+              isFalse
+                ? "bg-amber-100 text-amber-900 border-amber-300"
+                : "bg-green-100 text-green-900 border-green-300"
+            }`}>
+              {isFalse ? "⚠️ False Alarm / Fake Report Identified" : "✓ Verified Genuine Emergency Report"}
+            </span>
+
+            <h2 className="text-2xl font-bold text-slate-900 pt-1">
+              {isFalse ? "Report Logged — Marked as False Alarm" : (t.reportSubmittedTitle || "Report Submitted Successfully")}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 max-w-sm mt-1 mx-auto">
+              {isFalse
+                ? "Our automated AI authenticity engine evaluated this statement/image and flagged it as a false alarm. Priority Score is 0.0/10."
+                : (t.reportSubmittedDesc || "Your emergency alert has been verified and transmitted to the rescue command center.")}
+            </p>
+          </div>
 
           <div className="mt-3 px-3.5 py-1 rounded-md bg-slate-100 border border-slate-200 inline-flex items-center gap-2">
             <span className="text-xs text-slate-600 font-medium">{t.incidentIdLabel || "Incident ID"}:</span>
             <span className="font-bold text-xs text-slate-900 font-mono">
               {submittedReceipt.incidentId}
+            </span>
+          </div>
+        </div>
+
+        {/* Prominent Verification & Priority Banner */}
+        <div className={`p-4 rounded-xl text-left border space-y-2.5 ${
+          isFalse
+            ? "bg-amber-50 border-amber-300 text-amber-900"
+            : "bg-blue-50 border-blue-200 text-blue-900"
+        }`}>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
+              {isFalse ? <AlertTriangle className="w-4 h-4 text-amber-600" /> : <ShieldCheck className="w-4 h-4 text-blue-600" />}
+              <span>{isFalse ? "False Alarm Verification Notice" : "Priority Score & Operational Triage"}</span>
+            </span>
+            <div className={`px-2.5 py-1 rounded-lg font-mono font-bold text-sm border ${
+              isFalse
+                ? "bg-white text-slate-800 border-amber-300"
+                : "bg-white text-blue-700 border-blue-300"
+            }`}>
+              Score: {submittedReceipt.priorityScore}/10
+            </div>
+          </div>
+
+          <p className="text-xs leading-relaxed font-medium">
+            {submittedReceipt.verificationReason || (isFalse ? "Report evaluated as a false alarm." : "Incident verified by multi-factor disaster triage AI.")}
+          </p>
+
+          <div className="text-[11px] pt-1 border-t border-current/20 flex items-center justify-between font-semibold">
+            <span>Operational Severity:</span>
+            <span className={isFalse ? "text-amber-800" : "text-blue-800"}>
+              {submittedReceipt.severity || (isFalse ? "False Alarm" : "High")}
             </span>
           </div>
         </div>
@@ -211,9 +335,11 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
 
           <div className="flex items-center justify-between pt-2 text-xs">
             <span className="text-slate-600 font-medium">{t.statusLabel || "Status"}:</span>
-            <span className="font-semibold text-green-700 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-green-600" />
-              {submittedReceipt.isOffline ? "Saved Locally (Will auto-sync)" : "Sent to Rescue Dashboard"}
+            <span className={`font-semibold flex items-center gap-1.5 ${isFalse ? "text-amber-700" : "text-green-700"}`}>
+              <span className={`w-2 h-2 rounded-full ${isFalse ? "bg-amber-500" : "bg-green-600"}`} />
+              {isFalse
+                ? "Deprioritized (Score 0.0) — Retained for Command Audit"
+                : (submittedReceipt.isOffline ? "Saved Locally (Will auto-sync)" : "Sent to Rescue Dashboard")}
             </span>
           </div>
 
@@ -261,7 +387,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           <button
             type="button"
             onClick={handleResetForm}
-            className="py-2.5 px-4 rounded-lg bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs border border-slate-300 transition-colors"
+            className="py-2.5 px-4 rounded-lg bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs border border-slate-300 transition-colors cursor-pointer"
           >
             <span className="flex items-center justify-center gap-1.5">
               <RotateCcw className="w-3.5 h-3.5" />
@@ -272,10 +398,10 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           <button
             type="button"
             onClick={() => setActivePortal("dashboard")}
-            className="py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-colors shadow-xs"
+            className="py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-colors shadow-xs cursor-pointer"
           >
             <span className="flex items-center justify-center gap-1.5">
-              {t.viewOnMap || "View on Rescue Map"}
+              {t.viewOnMap || "View on Rescue Dashboard"}
               <ArrowRight className="w-3.5 h-3.5" />
             </span>
           </button>
@@ -286,6 +412,53 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {/* 0. Quick Test Scenarios Bar */}
+      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <span>1-Click Test Scenarios (Real vs False Alarms)</span>
+          </span>
+          <span className="text-[10px] text-slate-500">Click to autofill & test</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => handleQuickScenario("flood_real")}
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-300 transition-colors"
+          >
+            🌊 Flood Disaster (Real)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickScenario("fire_real")}
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-100 hover:bg-red-200 text-red-800 border border-red-300 transition-colors"
+          >
+            🔥 Building Fire (Real)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickScenario("medical_real")}
+            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300 transition-colors"
+          >
+            🚑 Cardiac Crisis (Real)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickScenario("prank_fake")}
+            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition-colors"
+          >
+            ⚠️ Prank Test (Score 0.0)
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickScenario("pizza_fake")}
+            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-100 hover:bg-orange-200 text-orange-900 border border-orange-300 transition-colors"
+          >
+            🍕 Pizza Request (Score 0.0)
+          </button>
+        </div>
+      </div>
       {/* 1. Incident Type */}
       <div className="space-y-1.5">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
@@ -398,6 +571,19 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           placeholder={t.descriptionPlaceholder || "Describe landmarks, water depth, building color, phone number or urgent needs..."}
           className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 leading-relaxed resize-none"
         />
+
+        {currentStatementCheck.isFakeStatement && (
+          <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-300 flex items-start gap-2 text-xs text-amber-900 font-medium">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold">⚠️ AI Authenticity Alert: </span>
+              {currentStatementCheck.reason}
+              <p className="text-[10px] text-amber-700 font-normal mt-0.5">
+                Notice: Submissions with false statements are automatically scored 0.0/10 (False Alarm).
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 6. People Affected */}

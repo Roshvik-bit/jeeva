@@ -209,7 +209,7 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
                         "AI vision detected no active floodwaters, structural damage, fire, or trauma."}
                     </p>
                     <p className="text-[10px] text-amber-700 font-semibold pt-1 border-t border-amber-100">
-                      Triage Notice: This report will be tagged with priority 0.5 (Lowest) as an unverified false alarm.
+                      Triage Notice: This report will be tagged with Priority Score 0.0/10 as a false alarm and deprioritized.
                     </p>
                   </div>
                 ) : (

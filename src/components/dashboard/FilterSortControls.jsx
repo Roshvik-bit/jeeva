@@ -58,6 +58,7 @@ export const FilterSortControls = ({
           <option value="High">{t.highPriorityCard || "High"}</option>
           <option value="Medium">Medium</option>
           <option value="Low">Low</option>
+          <option value="False Alarm">⚠️ False Alarms (Score 0.0)</option>
         </select>
 
         {/* Status */}

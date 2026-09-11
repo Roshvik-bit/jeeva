@@ -77,19 +77,27 @@ export const PriorityIncidentList = ({
               </div>
 
               <div className="flex flex-col items-end gap-1 shrink-0">
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                    isResolved
-                      ? "bg-green-50 text-green-700 border-green-200"
-                      : incident.severity === "Critical"
-                      ? "bg-red-50 text-red-700 border-red-200"
-                      : incident.severity === "High"
-                      ? "bg-orange-50 text-orange-700 border-orange-200"
-                      : "bg-amber-50 text-amber-700 border-amber-200"
-                  }`}
-                >
-                  {isResolved ? (t.statusResolved || "Resolved") : incident.severity}
-                </span>
+                {incident.isFalseAlarm || incident.severity === "False Alarm" ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
+                    ⚠️ False Alarm (0.0)
+                  </span>
+                ) : (
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                      isResolved
+                        ? "bg-green-50 text-green-700 border-green-200"
+                        : incident.priorityScore >= 8.5 || incident.isAbsoluteEmergency
+                        ? "bg-red-100 text-red-800 border-red-300 animate-pulse font-extrabold"
+                        : incident.severity === "Critical"
+                        ? "bg-red-50 text-red-700 border-red-200"
+                        : incident.severity === "High"
+                        ? "bg-orange-50 text-orange-700 border-orange-200"
+                        : "bg-amber-50 text-amber-700 border-amber-200"
+                    }`}
+                  >
+                    {isResolved ? (t.statusResolved || "Resolved") : incident.isAbsoluteEmergency ? "🚨 Absolute Emergency" : incident.severity}
+                  </span>
+                )}
 
                 {(incident.corroboratingReportsCount || 1) > 1 && (
                   <span className="text-[10px] font-medium text-slate-500 flex items-center gap-1">
@@ -100,14 +108,38 @@ export const PriorityIncidentList = ({
               </div>
             </div>
 
-            {/* Middle Section: Metrics strictly matching pattern */}
+            {/* Middle Section: Operational Badges & Metrics */}
             <div className="mt-3 space-y-1 text-xs text-slate-600">
+              {/* Disaster Domain Tags */}
+              <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                {["flood", "landslide", "cyclone", "collapse", "earthquake"].includes(incident.category?.toLowerCase()) && !incident.isFalseAlarm && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 text-[10px] font-bold border border-blue-200">
+                    🌊 Natural Disaster
+                  </span>
+                )}
+                {incident.category?.toLowerCase() === "fire" && !incident.isFalseAlarm && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-50 text-red-800 text-[10px] font-bold border border-red-200">
+                    🔥 Fire Emergency
+                  </span>
+                )}
+                {(incident.category?.toLowerCase() === "medical" || incident.hasMedicalEmergency) && !incident.isFalseAlarm && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 text-[10px] font-bold border border-rose-200">
+                    🚑 Health / Medical
+                  </span>
+                )}
+                {incident.isFalseAlarm && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 text-[10px] font-semibold border border-amber-200">
+                    ⚠️ False Statement / Non-Hazard
+                  </span>
+                )}
+              </div>
+
               <div className="flex items-center gap-1.5 font-medium text-slate-800">
                 <Users className="w-3.5 h-3.5 text-slate-500" />
                 <span>{incident.peopleCount} {t.peopleAffectedLabel || "people affected"}</span>
               </div>
 
-              {incident.hasMedicalEmergency && (
+              {incident.hasMedicalEmergency && !incident.isFalseAlarm && (
                 <div className="flex items-center gap-1.5 font-semibold text-red-600">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" />
                   <span>{t.medicalAssistanceRequired || "Medical assistance required"}</span>
@@ -149,15 +181,21 @@ export const PriorityIncidentList = ({
             <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
               <div className="text-xs font-semibold text-slate-700">
                 <span>{t.priorityScore || "Priority Score"}: </span>
-                <span className={`font-mono font-bold text-sm ${
-                  incident.priorityScore >= 8.5
-                    ? "text-red-600"
-                    : incident.priorityScore >= 6.5
-                    ? "text-orange-600"
-                    : "text-amber-600"
-                }`}>
-                  {incident.priorityScore}/10
-                </span>
+                {incident.isFalseAlarm || incident.severity === "False Alarm" ? (
+                  <span className="font-mono font-bold text-sm text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                    0.0/10 (False Alarm)
+                  </span>
+                ) : (
+                  <span className={`font-mono font-bold text-sm ${
+                    incident.priorityScore >= 8.5
+                      ? "text-red-600 font-extrabold"
+                      : incident.priorityScore >= 6.5
+                      ? "text-orange-600"
+                      : "text-blue-600"
+                  }`}>
+                    {incident.priorityScore}/10
+                  </span>
+                )}
               </div>
 
               {/* Action Buttons */}
