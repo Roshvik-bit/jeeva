@@ -18,12 +18,12 @@ export const CommandAnalyticsBar = () => {
   const resolvedCount = incidents.filter((i) => i.status === "Resolved").length;
 
   const criticalCount = incidents.filter(
-    (i) => (i.severity === "Critical" || i.priorityScore >= 85) && i.status !== "Resolved"
+    (i) => (i.severity === "Critical" || i.priorityScore >= 8.5) && i.status !== "Resolved"
   ).length;
 
   const highPriorityCount = incidents.filter(
     (i) =>
-      (i.severity === "High" || (i.priorityScore >= 65 && i.priorityScore < 85)) &&
+      (i.severity === "High" || (i.priorityScore >= 6.5 && i.priorityScore < 8.5)) &&
       i.status !== "Resolved"
   ).length;
 

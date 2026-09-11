@@ -221,7 +221,7 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
               ${inc.severity} • ${inc.category}
             </span>
             <span style="font-size: 10px; font-family: monospace; font-weight: 700; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #334155; border: 1px solid #e2e8f0;">
-              Score: ${inc.priorityScore}/100
+              Score: ${inc.priorityScore}/10
             </span>
           </div>
           <h4 style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; line-height: 1.3;">

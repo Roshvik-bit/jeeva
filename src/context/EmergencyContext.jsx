@@ -19,7 +19,11 @@ export const EmergencyProvider = ({ children }) => {
   // Core Data Stores
   const [incidents, setIncidents] = useState(() => {
     const saved = storageService.getIncidents();
-    return saved && saved.length > 0 ? saved : PRESEEDED_INCIDENTS;
+    const list = saved && saved.length > 0 ? saved : PRESEEDED_INCIDENTS;
+    return list.map((inc) => ({
+      ...inc,
+      priorityScore: inc.priorityScore > 10 ? Number((inc.priorityScore / 10).toFixed(1)) : inc.priorityScore
+    }));
   });
 
   const [offlineOutbox, setOfflineOutbox] = useState(() => {

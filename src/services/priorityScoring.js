@@ -1,6 +1,7 @@
 /**
  * Smart Priority Scoring Engine for JEEVA (SIH26013)
  * Multi-factor algorithmic ranking for disaster incidents
+ * Normalized to a 0.0 - 10.0 scale
  */
 
 export const calculatePriorityScore = (incident) => {
@@ -12,46 +13,46 @@ export const calculatePriorityScore = (incident) => {
     corroboratingReportsCount = 1
   } = incident;
 
-  // 1. People Weight (Max: 35)
-  let peopleScore = 15;
-  if (peopleCount >= 20) peopleScore = 35;
-  else if (peopleCount >= 10) peopleScore = 32;
-  else if (peopleCount >= 5) peopleScore = 28;
-  else if (peopleCount >= 2) peopleScore = 22;
+  // 1. People Weight (Max: 3.5)
+  let peopleScore = 1.5;
+  if (peopleCount >= 20) peopleScore = 3.5;
+  else if (peopleCount >= 10) peopleScore = 3.2;
+  else if (peopleCount >= 5) peopleScore = 2.8;
+  else if (peopleCount >= 2) peopleScore = 2.2;
 
-  // 2. Medical Urgency Weight (Max: 30)
-  const medicalScore = hasMedicalEmergency ? 28 : 5;
+  // 2. Medical Urgency Weight (Max: 3.0)
+  const medicalScore = hasMedicalEmergency ? 2.8 : 0.5;
 
-  // 3. AI Hazard Severity Weight (Max: 25)
+  // 3. AI Hazard Severity Weight (Max: 2.5)
   const hazardSeverity = aiClassification.hazardSeverity || 7.0;
-  const aiHazardScore = Math.min(25, Math.round((hazardSeverity / 10) * 25));
+  const aiHazardScore = Math.min(2.5, Number(((hazardSeverity / 10) * 2.5).toFixed(1)));
 
-  // 4. Recency Decay (Max: 10)
+  // 4. Recency Decay (Max: 1.0)
   const elapsedMinutes = Math.max(0, (Date.now() - new Date(timestamp).getTime()) / (1000 * 60));
-  let recencyScore = 10;
-  if (elapsedMinutes > 120) recencyScore = 2;
-  else if (elapsedMinutes > 60) recencyScore = 4;
-  else if (elapsedMinutes > 30) recencyScore = 7;
-  else if (elapsedMinutes > 15) recencyScore = 9;
+  let recencyScore = 1.0;
+  if (elapsedMinutes > 120) recencyScore = 0.2;
+  else if (elapsedMinutes > 60) recencyScore = 0.4;
+  else if (elapsedMinutes > 30) recencyScore = 0.7;
+  else if (elapsedMinutes > 15) recencyScore = 0.9;
 
-  // 5. Corroborating duplicate reports bonus (Max: 15)
+  // 5. Corroborating duplicate reports bonus (Max: 1.5)
   let corroborationScore = 0;
-  if (corroboratingReportsCount >= 4) corroborationScore = 15;
-  else if (corroboratingReportsCount === 3) corroborationScore = 10;
-  else if (corroboratingReportsCount === 2) corroborationScore = 5;
+  if (corroboratingReportsCount >= 4) corroborationScore = 1.5;
+  else if (corroboratingReportsCount === 3) corroborationScore = 1.0;
+  else if (corroboratingReportsCount === 2) corroborationScore = 0.5;
 
-  // Total Score (0 - 100)
+  // Total Score (0.0 - 10.0)
   const rawScore = peopleScore + medicalScore + aiHazardScore + recencyScore + corroborationScore;
-  const priorityScore = Math.min(100, Math.max(15, rawScore));
+  const priorityScore = Number(Math.min(10.0, Math.max(1.0, rawScore)).toFixed(1));
 
   // Determine qualitative severity label
   let severity = "Low";
-  if (priorityScore >= 85) severity = "Critical";
-  else if (priorityScore >= 70) severity = "High";
-  else if (priorityScore >= 50) severity = "Medium";
+  if (priorityScore >= 8.5) severity = "Critical";
+  else if (priorityScore >= 7.0) severity = "High";
+  else if (priorityScore >= 5.0) severity = "Medium";
 
-  const explanation = `Score ${priorityScore}/100: ${peopleCount} trapped (${peopleScore} pts) + ${
-    hasMedicalEmergency ? "Medical Emergency (28 pts)" : "Standard Triage (5 pts)"
+  const explanation = `Score ${priorityScore}/10: ${peopleCount} trapped (${peopleScore} pts) + ${
+    hasMedicalEmergency ? "Medical Emergency (2.8 pts)" : "Standard Triage (0.5 pts)"
   } + AI Hazard (${aiHazardScore} pts) + Recency (${recencyScore} pts) + ${corroboratingReportsCount} Corroborations (${corroborationScore} pts)`;
 
   return {

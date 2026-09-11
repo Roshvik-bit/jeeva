@@ -27,13 +27,13 @@ export const PRESEEDED_INCIDENTS = [
     voiceTranscript: "Water has broken through the perimeter wall! 16 people are trapped here, please send boats immediately, patients are running out of battery for oxygen!",
     recommendedResource: "Rescue Boat",
     assignedUnit: "UNIT-NDRF-02",
-    priorityScore: 97,
+    priorityScore: 9.7,
     scoreBreakdown: {
-      peopleScore: 35,
-      medicalScore: 25,
-      aiHazardScore: 24,
-      recencyScore: 8,
-      corroborationScore: 5
+      peopleScore: 3.5,
+      medicalScore: 2.5,
+      aiHazardScore: 2.4,
+      recencyScore: 0.8,
+      corroborationScore: 0.5
     },
     corroboratingReportsCount: 2,
     subReports: [
@@ -83,13 +83,13 @@ export const PRESEEDED_INCIDENTS = [
     voiceTranscript: "The bridge slab just gave way! Send hydraulic cutters and crane immediately, people are trapped in the white taxi!",
     recommendedResource: "Road Clearance Unit",
     assignedUnit: null,
-    priorityScore: 92,
+    priorityScore: 9.2,
     scoreBreakdown: {
-      peopleScore: 28,
-      medicalScore: 25,
-      aiHazardScore: 23,
-      recencyScore: 7,
-      corroborationScore: 9
+      peopleScore: 2.8,
+      medicalScore: 2.5,
+      aiHazardScore: 2.3,
+      recencyScore: 0.7,
+      corroborationScore: 0.9
     },
     corroboratingReportsCount: 3,
     subReports: [
@@ -147,13 +147,13 @@ export const PRESEEDED_INCIDENTS = [
     voiceTranscript: "My sister is in labor pains! Water is inside our hut, ambulances say they cannot cross the flooded road, help us please!",
     recommendedResource: "Medical Team",
     assignedUnit: null,
-    priorityScore: 94,
+    priorityScore: 9.4,
     scoreBreakdown: {
-      peopleScore: 24,
-      medicalScore: 30,
-      aiHazardScore: 22,
-      recencyScore: 10,
-      corroborationScore: 8
+      peopleScore: 2.4,
+      medicalScore: 3.0,
+      aiHazardScore: 2.2,
+      recencyScore: 1.0,
+      corroborationScore: 0.8
     },
     corroboratingReportsCount: 2,
     subReports: [
@@ -203,13 +203,13 @@ export const PRESEEDED_INCIDENTS = [
     voiceTranscript: "Transformer is exploding with sparks in the water! Don't let anyone step into the water, call electricity board and fire department!",
     recommendedResource: "Fire Tender",
     assignedUnit: null,
-    priorityScore: 84,
+    priorityScore: 8.4,
     scoreBreakdown: {
-      peopleScore: 30,
-      medicalScore: 10,
-      aiHazardScore: 24,
-      recencyScore: 5,
-      corroborationScore: 15
+      peopleScore: 3.0,
+      medicalScore: 1.0,
+      aiHazardScore: 2.4,
+      recencyScore: 0.5,
+      corroborationScore: 1.5
     },
     corroboratingReportsCount: 4,
     subReports: [
@@ -259,13 +259,13 @@ export const PRESEEDED_INCIDENTS = [
     voiceTranscript: "Road is completely blocked by huge tree, we cannot move forward or reverse due to mud. 6 of us waiting in cars.",
     recommendedResource: "Road Clearance Unit",
     assignedUnit: "UNIT-SDRF-ENG",
-    priorityScore: 68,
+    priorityScore: 6.8,
     scoreBreakdown: {
-      peopleScore: 22,
+      peopleScore: 2.2,
       medicalScore: 0,
-      aiHazardScore: 18,
-      recencyScore: 8,
-      corroborationScore: 20
+      aiHazardScore: 1.8,
+      recencyScore: 0.8,
+      corroborationScore: 2.0
     },
     corroboratingReportsCount: 2,
     subReports: []
@@ -298,13 +298,13 @@ export const PRESEEDED_INCIDENTS = [
     voiceTranscript: "We have over 40 people in the school hall and clean water has run out, please send water bottles.",
     recommendedResource: "Rescue Boat",
     assignedUnit: null,
-    priorityScore: 42,
+    priorityScore: 4.2,
     scoreBreakdown: {
-      peopleScore: 25,
+      peopleScore: 2.5,
       medicalScore: 0,
-      aiHazardScore: 10,
-      recencyScore: 2,
-      corroborationScore: 5
+      aiHazardScore: 1.0,
+      recencyScore: 0.2,
+      corroborationScore: 0.5
     },
     corroboratingReportsCount: 1,
     subReports: []

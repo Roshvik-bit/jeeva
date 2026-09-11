@@ -104,7 +104,7 @@ export const DashboardPortal = () => {
     { id: "dashboard", label: t.dashboard || "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
     { id: "incidents", label: t.incidents || "Incidents", icon: <ShieldAlert className="w-4 h-4" />, count: incidents.filter(i => i.status !== "Resolved").length },
     { id: "map", label: t.map || "Map", icon: <MapIcon className="w-4 h-4" /> },
-    { id: "alerts", label: t.alerts || "Alerts", icon: <Bell className="w-4 h-4" />, count: incidents.filter(i => (i.severity === "Critical" || i.priorityScore >= 85) && i.status !== "Resolved").length, alertBadge: true },
+    { id: "alerts", label: t.alerts || "Alerts", icon: <Bell className="w-4 h-4" />, count: incidents.filter(i => (i.severity === "Critical" || i.priorityScore >= 8.5) && i.status !== "Resolved").length, alertBadge: true },
     { id: "resources", label: t.resources || "Resources", icon: <Truck className="w-4 h-4" />, count: `${rescueUnits.filter(u => u.status === "Available").length}/${rescueUnits.length}` },
     { id: "status", label: t.systemStatus || "System Status", icon: <Activity className="w-4 h-4" /> }
   ];

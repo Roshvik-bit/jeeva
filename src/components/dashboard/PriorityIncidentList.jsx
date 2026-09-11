@@ -144,13 +144,13 @@ export const PriorityIncidentList = ({
               <div className="text-xs font-semibold text-slate-700">
                 <span>{t.priorityScore || "Priority Score"}: </span>
                 <span className={`font-mono font-bold text-sm ${
-                  incident.priorityScore >= 85
+                  incident.priorityScore >= 8.5
                     ? "text-red-600"
-                    : incident.priorityScore >= 65
+                    : incident.priorityScore >= 6.5
                     ? "text-orange-600"
                     : "text-amber-600"
                 }`}>
-                  {incident.priorityScore}
+                  {incident.priorityScore}/10
                 </span>
               </div>
 

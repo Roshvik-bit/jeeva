@@ -49,7 +49,7 @@ export const DispatchUnitModal = ({ incident, isOpen, onClose }) => {
                 {incident.title}
               </span>
               <span className="font-mono text-xs font-bold text-red-600">
-                Score: {incident.priorityScore}/100
+                Score: {incident.priorityScore}/10
               </span>
             </div>
             <p className="text-xs text-slate-600">📍 {incident.location?.address}</p>

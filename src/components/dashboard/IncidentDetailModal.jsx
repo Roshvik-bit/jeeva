@@ -89,7 +89,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
               <p className="text-[10px] uppercase font-bold text-slate-500">{t.priorityScore || "Priority Score"}</p>
               <p className="text-xl font-bold font-mono text-red-600 mt-0.5">
-                {incident.priorityScore}/100
+                {incident.priorityScore}/10
               </p>
             </div>
 
@@ -142,17 +142,17 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                     Priority Score
                   </span>
                   <span className="text-xs font-bold text-slate-800">
-                    {incident.priorityScore >= 85 ? "Critical Urgency" : incident.priorityScore >= 65 ? "High Urgency" : "Moderate"}
+                    {incident.priorityScore >= 8.5 ? "Critical Urgency" : incident.priorityScore >= 6.5 ? "High Urgency" : "Moderate"}
                   </span>
                 </div>
                 <div className={`px-2.5 py-1 rounded-lg font-mono font-bold text-base border ${
-                  incident.priorityScore >= 85
+                  incident.priorityScore >= 8.5
                     ? "bg-red-50 border-red-200 text-red-700"
-                    : incident.priorityScore >= 65
+                    : incident.priorityScore >= 6.5
                     ? "bg-orange-50 border-orange-200 text-orange-700"
                     : "bg-blue-50 border-blue-200 text-blue-700"
                 }`}>
-                  {incident.priorityScore}/100
+                  {incident.priorityScore}/10
                 </div>
               </div>
             </div>
