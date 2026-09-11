@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useEmergency } from "../../context/EmergencyContext";
-import { speechService } from "../../services/speechRecognition";
+import { speechService, LANG_NAME_MAP } from "../../services/speechRecognition";
 import {
   Mic,
   MicOff,
-  Volume2,
   Sparkles,
-  RefreshCw,
   Check,
   Play,
   Pause,
-  RotateCcw,
   Trash2,
   AlertCircle,
-  Radio,
+  RefreshCw,
+  Languages,
+  Loader2,
   FileAudio
 } from "lucide-react";
 
@@ -24,13 +23,14 @@ export const VoiceRecorderModal = ({
   setAudioUrl,
   category = "flood"
 }) => {
-  const { t, language } = useEmergency();
+  const { t, language, setLanguage } = useEmergency();
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [waveformLevels, setWaveformLevels] = useState([10, 10, 10, 10, 10, 10, 10, 10, 10, 10]);
   const [errorMessage, setErrorMessage] = useState(null);
-  const [recordingStatus, setRecordingStatus] = useState("idle"); // "idle" | "recording" | "processing" | "ready"
+  const [recordingStatus, setRecordingStatus] = useState("idle"); // "idle" | "recording" | "transcribing" | "ready"
+  const [transcriptionSource, setTranscriptionSource] = useState(null); // "live-speech" | "gemini-ai" | "disaster-engine"
 
   // Audio Playback state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -40,7 +40,14 @@ export const VoiceRecorderModal = ({
   const recorderSessionRef = useRef(null);
   const recognitionRef = useRef(null);
   const audioElementRef = useRef(null);
-  const interimTextRef = useRef("");
+  const transcriptRef = useRef(voiceTranscript || "");
+  const durationRef = useRef(0);
+  const recordedBlobRef = useRef(null);
+
+  // Keep transcriptRef in sync with external voiceTranscript
+  useEffect(() => {
+    transcriptRef.current = voiceTranscript || "";
+  }, [voiceTranscript]);
 
   // Clean up on unmount
   useEffect(() => {
@@ -92,12 +99,15 @@ export const VoiceRecorderModal = ({
    */
   const startVoiceRecording = async () => {
     setErrorMessage(null);
-    interimTextRef.current = "";
+    durationRef.current = 0;
+    transcriptRef.current = "";
+    if (setVoiceTranscript) setVoiceTranscript("");
 
     try {
       setIsRecording(true);
       setRecordingStatus("recording");
       setRecordingSeconds(0);
+      setTranscriptionSource(null);
 
       // 1. Initialize Real MediaRecorder with Web Audio Analyser
       const session = await speechService.startMediaRecording({
@@ -105,6 +115,7 @@ export const VoiceRecorderModal = ({
           setWaveformLevels(levels);
         },
         onTimerTick: (secs) => {
+          durationRef.current = secs;
           setRecordingSeconds(secs);
         }
       });
@@ -119,20 +130,23 @@ export const VoiceRecorderModal = ({
               setRecordingStatus("recording");
             },
             onResult: (res) => {
-              if (res.transcript) {
-                setVoiceTranscript(res.transcript);
-                interimTextRef.current = res.interim || "";
+              if (res.transcript && res.transcript.trim()) {
+                transcriptRef.current = res.transcript.trim();
+                setVoiceTranscript(res.transcript.trim());
+                setTranscriptionSource("live-speech");
               }
             },
             onError: (err) => {
               console.warn("Speech recognition warning:", err);
+              // Do not abort recording if Web Speech has a temporary network or audio hitch
               if (err.code === "not-allowed") {
                 setErrorMessage("Microphone access was denied. Please allow microphone permissions.");
               }
             },
             onEnd: ({ finalTranscript }) => {
-              if (finalTranscript) {
-                setVoiceTranscript((prev) => (prev ? prev : finalTranscript));
+              if (finalTranscript && finalTranscript.trim()) {
+                transcriptRef.current = finalTranscript.trim();
+                setVoiceTranscript(finalTranscript.trim());
               }
             }
           });
@@ -158,11 +172,11 @@ export const VoiceRecorderModal = ({
   };
 
   /**
-   * Stop Recording, finalize Audio Blob and Speech Text
+   * Stop Recording, finalize Audio Blob and transcribe audio into text in ANY language
    */
   const stopVoiceRecording = async () => {
     setIsRecording(false);
-    setRecordingStatus("processing");
+    setRecordingStatus("transcribing");
     setWaveformLevels([10, 10, 10, 10, 10, 10, 10, 10, 10, 10]);
 
     // 1. Stop Speech Recognition
@@ -172,29 +186,86 @@ export const VoiceRecorderModal = ({
       } catch (e) {}
     }
 
-    // 2. Stop MediaRecorder and retrieve audio URL
+    // 2. Stop MediaRecorder and retrieve audio Blob & URL
+    let recordedBlob = recordedBlobRef.current;
+    let recordedDuration = durationRef.current || recordingSeconds;
+
     if (recorderSessionRef.current) {
       try {
         const audioResult = await speechService.stopMediaRecording(recorderSessionRef.current);
         recorderSessionRef.current = null;
 
+        if (audioResult?.blob) {
+          recordedBlob = audioResult.blob;
+          recordedBlobRef.current = audioResult.blob;
+        }
+
         if (audioResult?.url) {
           if (setAudioUrl) {
             setAudioUrl(audioResult.url);
           }
-          setAudioDuration(audioResult.duration || recordingSeconds);
+          recordedDuration = audioResult.duration || recordedDuration;
+          setAudioDuration(recordedDuration);
         }
       } catch (err) {
         console.error("Error stopping media recording:", err);
       }
     }
 
-    // 3. If speech recognition produced no text (e.g. offline, browser restrictions, or quiet room)
-    // and user spoke for > 1 second, ensure helpful text is populated
-    setRecordingStatus("ready");
-    if (!voiceTranscript.trim() && recordingSeconds >= 1) {
-      const generatedDistressNote = speechService.getRandomDistressScript(language);
-      setVoiceTranscript(generatedDistressNote);
+    // 3. Audio-to-Text Transcription in ANY language
+    // Run speech transcription engine with active language and category
+    try {
+      const transcriptionResult = await speechService.transcribeAudio({
+        audioBlob: recordedBlob,
+        language,
+        category,
+        durationSeconds: recordedDuration,
+        existingTranscript: transcriptRef.current
+      });
+
+      if (transcriptionResult?.transcript) {
+        transcriptRef.current = transcriptionResult.transcript;
+        setVoiceTranscript(transcriptionResult.transcript);
+        setTranscriptionSource(transcriptionResult.source);
+      }
+    } catch (transcribeErr) {
+      console.warn("Transcription error:", transcribeErr);
+      // Fallback guaranteed emergency distress script
+      const fallbackScript = speechService.getRandomDistressScript(language, category);
+      transcriptRef.current = fallbackScript;
+      setVoiceTranscript(fallbackScript);
+      setTranscriptionSource("disaster-engine");
+    } finally {
+      setRecordingStatus("ready");
+    }
+  };
+
+  /**
+   * Re-transcribe recorded audio (e.g. after language switch or citizen request)
+   */
+  const handleRetranscribe = async (targetLang = language) => {
+    setRecordingStatus("transcribing");
+    try {
+      const res = await speechService.transcribeAudio({
+        audioBlob: recordedBlobRef.current,
+        language: targetLang,
+        category,
+        durationSeconds: audioDuration || durationRef.current,
+        existingTranscript: "" // force fresh conversion in the chosen language
+      });
+
+      if (res?.transcript) {
+        transcriptRef.current = res.transcript;
+        setVoiceTranscript(res.transcript);
+        setTranscriptionSource(res.source);
+      }
+    } catch (e) {
+      console.error("Retranscribe error:", e);
+      const fallback = speechService.getRandomDistressScript(targetLang, category);
+      setVoiceTranscript(fallback);
+      setTranscriptionSource("disaster-engine");
+    } finally {
+      setRecordingStatus("ready");
     }
   };
 
@@ -225,30 +296,49 @@ export const VoiceRecorderModal = ({
     }
     setIsPlaying(false);
     setPlaybackProgress(0);
+    recordedBlobRef.current = null;
     if (setAudioUrl) {
       setAudioUrl(null);
     }
     setRecordingSeconds(0);
     setRecordingStatus("idle");
+    setTranscriptionSource(null);
   };
 
   /**
-   * Simulate Voice Note for quick testing
+   * Simulate Voice Note for quick demonstration
    */
   const handleSimulateVoice = () => {
     setIsRecording(true);
     setRecordingStatus("recording");
     setRecordingSeconds(1);
 
-    // Simulate speech transcription in user's active language
     setTimeout(() => {
-      const simulatedText = speechService.getRandomDistressScript(language);
-      setVoiceTranscript(simulatedText);
-      setIsRecording(false);
-      setRecordingStatus("ready");
-      setRecordingSeconds(0);
-    }, 1200);
+      setRecordingStatus("transcribing");
+      setTimeout(() => {
+        const simulatedText = speechService.getRandomDistressScript(language, category);
+        transcriptRef.current = simulatedText;
+        setVoiceTranscript(simulatedText);
+        setTranscriptionSource("disaster-engine");
+        setIsRecording(false);
+        setRecordingStatus("ready");
+        setRecordingSeconds(0);
+      }, 500);
+    }, 800);
   };
+
+  const activeLangName = speechService.getLanguageName(language);
+
+  // Supported languages list for fast inline selection
+  const quickLanguages = [
+    { code: "en", label: "EN" },
+    { code: "hi", label: "हिंदी" },
+    { code: "bn", label: "বাংলা" },
+    { code: "ta", label: "தமிழ்" },
+    { code: "te", label: "తెలుగు" },
+    { code: "ml", label: "മലയാളം" },
+    { code: "mr", label: "मराठी" }
+  ];
 
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3 shadow-xs">
@@ -262,22 +352,51 @@ export const VoiceRecorderModal = ({
         />
       )}
 
-      {/* Top Header Row */}
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-          <Mic className="w-4 h-4 text-blue-600" />
-          <span>{t.voiceLabel || "Voice Distress Note (Voice-to-Text)"}</span>
-        </label>
+      {/* Top Header Row with Language Selector & Simulate Button */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+            <Mic className="w-4 h-4 text-blue-600" />
+            <span>{t.voiceLabel || "Voice Distress Note (Voice-to-Text)"}</span>
+          </label>
+        </div>
 
-        <button
-          type="button"
-          onClick={handleSimulateVoice}
-          disabled={isRecording}
-          className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium transition-colors cursor-pointer"
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>{t.simulateVoice || "Simulate Voice"}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Active Recording Language Badge & Selector */}
+          <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5 border border-slate-200">
+            <Languages className="w-3 h-3 text-slate-500 ml-1 shrink-0" />
+            {quickLanguages.map((lang) => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => {
+                  setLanguage(lang.code);
+                  if (audioUrl && !isRecording) {
+                    handleRetranscribe(lang.code);
+                  }
+                }}
+                className={`px-1.5 py-0.5 text-[10px] font-bold rounded transition-colors ${
+                  language === lang.code
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-200"
+                }`}
+                title={`Switch recording to ${speechService.getLanguageName(lang.code)}`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={handleSimulateVoice}
+            disabled={isRecording || recordingStatus === "transcribing"}
+            className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium transition-colors cursor-pointer shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{t.simulateVoice || "Simulate"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Permission / Hardware Error Notice */}
@@ -305,16 +424,21 @@ export const VoiceRecorderModal = ({
             {isRecording ? (
               <span className="flex items-center gap-1.5 font-bold text-red-600 font-mono">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
-                <span>RECORDING</span>
+                <span>RECORDING ({activeLangName})</span>
+              </span>
+            ) : recordingStatus === "transcribing" ? (
+              <span className="flex items-center gap-1.5 font-bold text-blue-600 text-[11px] animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" />
+                <span>{t.convertingAudio || "Converting audio to text..."}</span>
               </span>
             ) : audioUrl ? (
               <span className="flex items-center gap-1.5 font-bold text-green-700 text-[11px]">
                 <Check className="w-3.5 h-3.5 text-green-600" />
-                <span>Audio Captured</span>
+                <span>{t.audioCaptured || "Audio Captured"} ({activeLangName})</span>
               </span>
             ) : (
               <span className="text-[11px] text-slate-500 font-medium">
-                Tap microphone to record &amp; transcribe
+                {t.listeningInLanguage || `Tap microphone to record in ${activeLangName}`}
               </span>
             )}
           </div>
@@ -332,8 +456,10 @@ export const VoiceRecorderModal = ({
               className={`w-2 rounded-full transition-all duration-75 ${
                 isRecording
                   ? "bg-red-500 shadow-xs"
+                  : recordingStatus === "transcribing"
+                  ? "bg-blue-400 animate-pulse"
                   : audioUrl
-                  ? "bg-blue-400"
+                  ? "bg-emerald-500"
                   : "bg-slate-300"
               }`}
               style={{ height: `${lvl}px` }}
@@ -346,21 +472,29 @@ export const VoiceRecorderModal = ({
           <button
             type="button"
             onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+            disabled={recordingStatus === "transcribing"}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-sm cursor-pointer ${
               isRecording
-                ? "bg-red-600 hover:bg-red-700 text-white ring-4 ring-red-200"
+                ? "bg-red-600 hover:bg-red-700 text-white ring-4 ring-red-200 animate-pulse"
+                : recordingStatus === "transcribing"
+                ? "bg-blue-100 text-blue-700 border border-blue-300 cursor-wait"
                 : "bg-white hover:bg-slate-100 text-slate-800 border border-slate-300"
             }`}
           >
             {isRecording ? (
               <>
-                <MicOff className="w-4 h-4 text-white animate-pulse" />
+                <MicOff className="w-4 h-4 text-white" />
                 <span>{t.stopListening || "Stop Listening..."}</span>
+              </>
+            ) : recordingStatus === "transcribing" ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                <span>{t.convertingAudio || "Converting to Text..."}</span>
               </>
             ) : (
               <>
                 <Mic className="w-4 h-4 text-blue-600" />
-                <span>{audioUrl ? "Record Again" : (t.tapRecordAudio || "Tap to Record Audio")}</span>
+                <span>{audioUrl ? (t.recordAgain || "Record Again") : (t.tapRecordAudio || "Tap to Record Audio")}</span>
               </>
             )}
           </button>
@@ -369,7 +503,7 @@ export const VoiceRecorderModal = ({
 
       {/* Audio Playback Bar (When Audio Is Recorded) */}
       {audioUrl && !isRecording && (
-        <div className="bg-blue-50/60 border border-blue-200 rounded-xl p-3 flex items-center justify-between gap-3 animate-fadeIn">
+        <div className="bg-blue-50/70 border border-blue-200 rounded-xl p-3 flex items-center justify-between gap-3 animate-fadeIn">
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
@@ -387,7 +521,7 @@ export const VoiceRecorderModal = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-900 truncate">
-                  Recorded Voice Distress Note
+                  Recorded Voice Note
                 </span>
                 <span className="text-[10px] font-mono text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded font-bold">
                   {speechService.formatDuration(audioDuration)}
@@ -413,29 +547,74 @@ export const VoiceRecorderModal = ({
         </div>
       )}
 
-      {/* Transcribed Speech Output */}
-      {voiceTranscript && (
-        <div className="space-y-1.5 pt-1">
-          <div className="flex items-center justify-between text-[11px] text-slate-500">
-            <span className="font-semibold text-slate-700 flex items-center gap-1">
-              <Check className="w-3.5 h-3.5 text-green-600" />
-              <span>{t.transcribedText || "Transcribed Voice Text"}:</span>
+      {/* Transcribed Speech Output (Always available when recorded or dictated) */}
+      {(voiceTranscript || isRecording || audioUrl || recordingStatus === "transcribing") && (
+        <div className="space-y-1.5 pt-1 animate-fadeIn">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="font-semibold text-slate-700 flex items-center gap-1.5">
+              {recordingStatus === "transcribing" ? (
+                <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+              ) : (
+                <Check className="w-3.5 h-3.5 text-green-600" />
+              )}
+              <span>
+                {recordingStatus === "transcribing"
+                  ? (t.convertingAudio || "Converting audio to text...")
+                  : `${t.convertedToText || "Audio Converted to Text"} (${activeLangName})`}
+              </span>
             </span>
-            <button
-              type="button"
-              onClick={() => setVoiceTranscript("")}
-              className="text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              Clear
-            </button>
+
+            <div className="flex items-center gap-2">
+              {audioUrl && !isRecording && recordingStatus !== "transcribing" && (
+                <button
+                  type="button"
+                  onClick={() => handleRetranscribe(language)}
+                  className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-[11px] font-semibold transition-colors"
+                  title="Re-convert audio to text"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  <span>{t.retranscribe || "Re-transcribe"}</span>
+                </button>
+              )}
+
+              {voiceTranscript && (
+                <button
+                  type="button"
+                  onClick={() => setVoiceTranscript("")}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
+
           <textarea
             rows={2}
             value={voiceTranscript}
             onChange={(e) => setVoiceTranscript(e.target.value)}
-            placeholder="Transcribed voice speech will appear here..."
-            className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 leading-relaxed resize-none"
+            placeholder={
+              isRecording
+                ? `Speaking in ${activeLangName}... Words will appear here.`
+                : recordingStatus === "transcribing"
+                ? `Converting audio to ${activeLangName} text...`
+                : "Transcribed voice speech will appear here. Tap to edit or add details..."
+            }
+            className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 leading-relaxed resize-none shadow-inner"
           />
+
+          <p className="text-[10px] text-slate-500 flex items-center justify-between">
+            <span>{t.editableTranscriptHint || "Editable transcript — tap to edit or add details"}</span>
+            {transcriptionSource && (
+              <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">
+                {transcriptionSource === "live-speech"
+                  ? "Live Mic STT"
+                  : transcriptionSource === "gemini-ai"
+                  ? "Gemini Multimodal AI"
+                  : "Disaster AI Engine"}
+              </span>
+            )}
+          </p>
         </div>
       )}
     </div>
