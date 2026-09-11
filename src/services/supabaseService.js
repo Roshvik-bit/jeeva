@@ -1,10 +1,33 @@
 import { supabase, isSupabaseConfigured } from "./supabaseClient";
 
 /**
+ * Convert a Data URL (Base64) to a standard Blob
+ */
+export const dataUrlToBlob = (dataUrl) => {
+  if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.includes(";base64,")) {
+    return null;
+  }
+  try {
+    const parts = dataUrl.split(";base64,");
+    const mime = parts[0].replace("data:", "") || "application/octet-stream";
+    const binary = atob(parts[1]);
+    const array = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      array[i] = binary.charCodeAt(i);
+    }
+    return new Blob([array], { type: mime });
+  } catch (err) {
+    console.warn("dataUrlToBlob error:", err);
+    return null;
+  }
+};
+
+/**
  * Maps Supabase PostgreSQL snake_case row to JEEVA camelCase incident object
  */
 export const mapRowToIncident = (row) => {
   if (!row) return null;
+  const audioData = row.audio_url || null;
   return {
     id: row.id,
     title: row.title,
@@ -18,7 +41,8 @@ export const mapRowToIncident = (row) => {
     description: row.description || "",
     location: row.location || { address: "Unknown Location", lat: 13.0827, lng: 80.2707 },
     photoUrl: row.photo_url || null,
-    audioUrl: row.audio_url || null,
+    audioUrl: audioData,
+    audioBase64: audioData && audioData.startsWith("data:audio") ? audioData : null,
     voiceTranscript: row.voice_transcript || "",
     aiClassification: row.ai_classification || null,
     timestamp: row.created_at || new Date().toISOString(),
@@ -33,6 +57,12 @@ export const mapRowToIncident = (row) => {
  * Maps JEEVA camelCase incident object to Supabase PostgreSQL snake_case payload
  */
 export const mapIncidentToRow = (incident) => {
+  // If audioUrl is a local blob: URL, prefer persistent audioBase64 string
+  let persistentAudio = incident.audioBase64 || incident.audioUrl || null;
+  if (persistentAudio && persistentAudio.startsWith("blob:") && incident.audioBase64) {
+    persistentAudio = incident.audioBase64;
+  }
+
   return {
     id: incident.id,
     title: incident.title,
@@ -46,7 +76,7 @@ export const mapIncidentToRow = (incident) => {
     description: incident.description || "",
     location: incident.location,
     photo_url: incident.photoUrl || null,
-    audio_url: incident.audioUrl || null,
+    audio_url: persistentAudio,
     voice_transcript: incident.voiceTranscript || "",
     ai_classification: incident.aiClassification || null,
     recommended_resource: incident.recommendedResource || "Rescue Boat",
@@ -58,6 +88,58 @@ export const mapIncidentToRow = (incident) => {
 
 export const supabaseService = {
   isConfigured: () => isSupabaseConfigured,
+
+  /**
+   * Upload media (photo or audio) to Supabase Storage if bucket exists,
+   * otherwise fallback gracefully to persistent Data URL / Base64 in PostgreSQL column
+   */
+  uploadMedia: async (mediaData, incidentId, type = "photo") => {
+    if (!isSupabaseConfigured || !supabase || !mediaData) return mediaData;
+
+    // If already a public https URL, return as-is
+    if (typeof mediaData === "string" && (mediaData.startsWith("http://") || mediaData.startsWith("https://"))) {
+      return mediaData;
+    }
+
+    try {
+      const isPhoto = type === "photo";
+      const ext = isPhoto ? "jpg" : "webm";
+      const mimeType = isPhoto ? "image/jpeg" : "audio/webm";
+      const fileName = `${type}s/${incidentId}_${Date.now()}.${ext}`;
+
+      let blobToUpload = null;
+      if (typeof mediaData === "string" && mediaData.startsWith("data:")) {
+        blobToUpload = dataUrlToBlob(mediaData);
+      } else if (mediaData instanceof Blob) {
+        blobToUpload = mediaData;
+      }
+
+      if (blobToUpload) {
+        const { data, error } = await supabase.storage
+          .from("incident-media")
+          .upload(fileName, blobToUpload, {
+            contentType: mimeType,
+            upsert: true
+          });
+
+        if (!error && data?.path) {
+          const { data: publicUrlData } = supabase.storage
+            .from("incident-media")
+            .getPublicUrl(data.path);
+          if (publicUrlData?.publicUrl) {
+            return publicUrlData.publicUrl;
+          }
+        } else if (error) {
+          // If storage bucket is not created or RLS rejects, fallback to direct column storage
+          console.info("Supabase storage bucket notice (using direct database column):", error.message);
+        }
+      }
+    } catch (storageErr) {
+      console.warn("Storage upload exception, fallback to direct column:", storageErr);
+    }
+
+    return mediaData;
+  },
 
   /**
    * Fetch all incidents from Supabase ordered by created_at DESC
@@ -83,12 +165,31 @@ export const supabaseService = {
   },
 
   /**
-   * Insert a new incident into Supabase
+   * Insert a new incident into Supabase, uploading photos and audio
    */
   insertIncident: async (incident) => {
     if (!isSupabaseConfigured || !supabase) return null;
     try {
-      const row = mapIncidentToRow(incident);
+      let photoUrl = incident.photoUrl;
+      let audioUrl = incident.audioBase64 || incident.audioUrl;
+
+      // 1. Sync photo to Supabase Storage (or fallback to persistent Base64)
+      if (photoUrl && (photoUrl.startsWith("data:") || photoUrl instanceof Blob)) {
+        photoUrl = await supabaseService.uploadMedia(photoUrl, incident.id, "photo");
+      }
+
+      // 2. Sync audio to Supabase Storage (or fallback to persistent Base64)
+      if (audioUrl && (audioUrl.startsWith("data:") || audioUrl.startsWith("blob:") || audioUrl instanceof Blob)) {
+        audioUrl = await supabaseService.uploadMedia(audioUrl, incident.id, "audio");
+      }
+
+      const row = mapIncidentToRow({
+        ...incident,
+        photoUrl,
+        audioUrl,
+        audioBase64: audioUrl && typeof audioUrl === "string" && audioUrl.startsWith("data:") ? audioUrl : null
+      });
+
       const { data, error } = await supabase
         .from("incidents")
         .insert([row])
