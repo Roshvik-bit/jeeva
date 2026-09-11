@@ -31,6 +31,12 @@ export const DashboardPortal = () => {
   const [activeSidebarTab, setActiveSidebarTab] = useState("dashboard"); // "dashboard" | "incidents" | "map" | "alerts" | "resources" | "status"
   const [lastSyncTime, setLastSyncTime] = useState("Just now");
 
+  // Keep selected incident synchronized with live incidents state
+  const activeSelectedIncident = useMemo(() => {
+    if (!selectedIncident) return null;
+    return incidents.find((i) => i.id === selectedIncident.id) || selectedIncident;
+  }, [incidents, selectedIncident]);
+
   // Filters & Sorting state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -357,11 +363,13 @@ export const DashboardPortal = () => {
       </main>
 
       {/* Incident Detail Inspector Modal */}
-      <IncidentDetailModal
-        incident={selectedIncident}
-        isOpen={Boolean(selectedIncident)}
-        onClose={() => setSelectedIncident(null)}
-      />
+      {activeSelectedIncident && (
+        <IncidentDetailModal
+          incident={activeSelectedIncident}
+          isOpen={Boolean(activeSelectedIncident)}
+          onClose={() => setSelectedIncident(null)}
+        />
+      )}
 
       {/* Direct Dispatch Modal */}
       <DispatchUnitModal

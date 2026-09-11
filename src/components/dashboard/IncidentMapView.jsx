@@ -251,11 +251,20 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
       `;
 
       marker.bindPopup(popupHtml);
-      marker.on("popupopen", () => {
-        const btn = document.getElementById(`btn-inspect-${inc.id}`);
+      marker.on("popupopen", (e) => {
+        const popupEl = e.popup?.getElement();
+        const btn = popupEl ? popupEl.querySelector("button") : document.getElementById(`btn-inspect-${inc.id}`);
         if (btn) {
-          btn.onclick = () => onSelectIncident(inc);
+          btn.onclick = (event) => {
+            if (event) event.stopPropagation();
+            onSelectIncident(inc);
+          };
         }
+      });
+
+      // Also trigger onSelectIncident when clicking the marker itself
+      marker.on("click", () => {
+        onSelectIncident(inc);
       });
 
       marker.addTo(markersLayer);

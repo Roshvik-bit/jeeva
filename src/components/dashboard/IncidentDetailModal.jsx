@@ -20,6 +20,10 @@ import {
 const AudioPlayerSection = React.memo(({ audioSrc, incidentId }) => {
   const [loadError, setLoadError] = useState(false);
 
+  useEffect(() => {
+    setLoadError(false);
+  }, [audioSrc]);
+
   if (!audioSrc || loadError) {
     return (
       <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-[11px] flex items-center justify-between">
@@ -63,21 +67,35 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
   const { updateIncidentStatus, rescueUnits, t } = useEmergency();
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
 
-  if (!isOpen || !incident) return null;
-
-  const assignedUnitObj = rescueUnits.find((u) => u.id === incident.assignedUnit);
+  // Unconditionally execute useMemo at the top level to adhere strictly to React Hook Rules
   const audioSrc = useMemo(
-    () => getPlayableAudioUrl(incident.audioUrl || incident.audioBase64),
+    () => (incident ? getPlayableAudioUrl(incident.audioUrl || incident.audioBase64) : null),
     [incident?.id, incident?.audioUrl, incident?.audioBase64]
   );
+
+  const formattedTime = useMemo(() => {
+    if (!incident?.timestamp) return "Just now";
+    const d = new Date(incident.timestamp);
+    return isNaN(d.getTime()) ? "Just now" : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }, [incident?.timestamp]);
+
+  if (!isOpen || !incident) return null;
+
+  const assignedUnitObj = rescueUnits?.find((u) => u.id === incident.assignedUnit);
 
   const handleStatusChange = (newStatus) => {
     updateIncidentStatus(incident.id, newStatus);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/40 backdrop-blur-sm overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden my-6 animate-fadeIn">
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden my-6 animate-fadeIn"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center gap-2.5">
@@ -90,7 +108,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                   : "bg-amber-50 text-amber-700 border-amber-200"
               }`}
             >
-              {incident.severity} Severity
+              {incident.severity || "Medium"} Severity
             </span>
             <span className="font-mono text-xs font-semibold text-slate-500">
               #{incident.id}
@@ -104,7 +122,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -114,16 +132,16 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
           {/* Title & Location Header */}
           <div className="space-y-1">
             <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug">
-              {incident.title}
+              {incident.title || incident.location?.address || "Emergency Incident"}
             </h3>
             <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
               <span className="flex items-center gap-1 text-slate-700">
                 <MapPin className="w-3.5 h-3.5 text-red-600" />
-                {incident.location?.address}
+                {incident.location?.address || "Disaster Zone"}
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5 text-slate-400" />
-                {new Date(incident.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {formattedTime}
               </span>
             </div>
           </div>
@@ -410,25 +428,33 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                 </span>
               </h4>
               <div className="space-y-2">
-                {incident.subReports.map((sub) => (
-                  <div
-                    key={sub.id}
-                    className="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1.5 shadow-sm"
-                  >
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-bold text-slate-800">
-                        {sub.reporter} ({sub.contact})
-                      </span>
-                      <span className="text-slate-400 font-mono">
-                        {new Date(sub.reportedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {Array.isArray(incident.subReports) && incident.subReports.map((sub, idx) => {
+                  const subTime = (() => {
+                    if (!sub?.reportedAt) return "Recently";
+                    const d = new Date(sub.reportedAt);
+                    return isNaN(d.getTime()) ? "Recently" : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  })();
+
+                  return (
+                    <div
+                      key={sub.id || idx}
+                      className="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1.5 shadow-sm"
+                    >
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="font-bold text-slate-800">
+                          {sub.reporter || "Citizen"} ({sub.contact || "Field Radio"})
+                        </span>
+                        <span className="text-slate-400 font-mono">
+                          {subTime}
+                        </span>
+                      </div>
+                      <p className="text-slate-600">{sub.note}</p>
+                      <span className="text-[10px] font-mono text-orange-700 font-semibold">
+                        +{sub.peopleCount || 1} trapped reported
                       </span>
                     </div>
-                    <p className="text-slate-600">{sub.note}</p>
-                    <span className="text-[10px] font-mono text-orange-700 font-semibold">
-                      +{sub.peopleCount} trapped reported
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
