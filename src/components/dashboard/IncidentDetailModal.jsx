@@ -361,16 +361,32 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                   </p>
                 </div>
 
-                {/* Factor 4: Report Confidence */}
+                {/* Factor 4: Operational Priority Level */}
                 <div className="p-3 rounded-xl bg-white border border-slate-200 space-y-1 shadow-sm">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">4. Report Confidence</span>
-                    <span className="font-bold text-teal-700">
-                      {incident.aiClassification?.confidence || 94}% Verified
+                    <span className="text-slate-500 font-medium">4. Priority Level</span>
+                    <span className={`font-bold ${
+                      incident.isFalseAlarm || incident.status === "REJECTED"
+                        ? "text-amber-700"
+                        : incident.priorityScore >= 8.5
+                        ? "text-red-600"
+                        : incident.priorityScore >= 6.5
+                        ? "text-orange-600"
+                        : "text-blue-700"
+                    }`}>
+                      {incident.isFalseAlarm
+                        ? "Rejected (0.0)"
+                        : incident.status === "REQUIRES_REVIEW"
+                        ? "Requires Review"
+                        : `${incident.severity || (incident.priorityScore >= 8.5 ? "Critical" : "High")} Priority`}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-800 font-semibold leading-tight">
-                    Multi-source verified & corroborated
+                    {incident.isFalseAlarm
+                      ? "Flagged as non-emergency false alarm"
+                      : incident.isAbsoluteEmergency
+                      ? "Absolute emergency dispatch tier"
+                      : `Priority score ${incident.priorityScore}/10 assigned`}
                   </p>
                   <p className="text-[10px] text-slate-500">
                     {incident.corroboratingReportsCount || 1} independent citizen report(s) aggregated
@@ -451,8 +467,18 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                       <Sparkles className="w-4 h-4 text-blue-600" />
                       <span>AI-assisted image analysis</span>
                     </div>
-                    <span className="font-mono text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-                      Confidence: {incident.aiClassification.confidence}%
+                    <span
+                      className={`font-mono text-[10px] px-2.5 py-0.5 rounded border font-bold ${
+                        incident.isFalseAlarm || incident.aiClassification?.status === "REJECTED"
+                          ? "bg-amber-100 text-amber-900 border-amber-300"
+                          : incident.aiClassification?.status === "REQUIRES_REVIEW"
+                          ? "bg-blue-100 text-blue-900 border-blue-300"
+                          : incident.priorityScore >= 8.5
+                          ? "bg-red-100 text-red-800 border-red-200"
+                          : "bg-blue-100 text-blue-800 border-blue-200"
+                      }`}
+                    >
+                      Priority Level: {incident.isFalseAlarm ? "Rejected" : incident.severity || (incident.priorityScore >= 8.5 ? "Critical" : incident.priorityScore >= 6.5 ? "High" : "Medium")}
                     </span>
                   </div>
 

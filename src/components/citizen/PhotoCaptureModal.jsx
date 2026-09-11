@@ -69,6 +69,18 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
     setAiClassification(null);
   };
 
+  const getPriorityLevel = (cls) => {
+    if (!cls) return "Standard";
+    if (cls.priorityLevel) return cls.priorityLevel;
+    if (cls.isFalseAlarm || cls.status === "REJECTED") return "Rejected";
+    if (cls.status === "REQUIRES_REVIEW" || cls.isInvalidImage) return "Requires Review";
+    const score = Number(cls.priorityScore ?? cls.hazardSeverity ?? 7.0);
+    if (score >= 8.5) return "Critical";
+    if (score >= 6.5) return "High";
+    if (score >= 4.0) return "Medium";
+    return "Low";
+  };
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-3">
       <div className="flex items-center justify-between">
@@ -195,13 +207,17 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
                   )}
                 </div>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-                    aiClassification.isFalseAlarm
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                    aiClassification.isFalseAlarm || aiClassification.status === "REJECTED"
                       ? "bg-amber-100 text-amber-900 border-amber-300"
+                      : aiClassification.status === "REQUIRES_REVIEW"
+                      ? "bg-blue-100 text-blue-900 border-blue-300"
+                      : (aiClassification.priorityLevel === "Critical" || aiClassification.hazardSeverity >= 8.5)
+                      ? "bg-red-100 text-red-800 border-red-300"
                       : "bg-emerald-100 text-emerald-800 border-emerald-200"
                   }`}
                 >
-                  Confidence: {aiClassification.confidence}%
+                  Priority Level: {getPriorityLevel(aiClassification)}
                 </span>
               </div>
 
@@ -219,8 +235,9 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
                           {aiClassification.verificationReason}
                         </p>
                         <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] text-amber-900 font-semibold border-t border-amber-200">
+                          <span>Priority Level: <span className="font-mono px-1.5 py-0.5 rounded bg-white text-red-600 border border-amber-200 font-bold">{getPriorityLevel(aiClassification)}</span></span>
                           <span>Status: <span className="font-mono uppercase px-1.5 py-0.5 rounded bg-amber-100 border border-amber-300 font-bold">{aiClassification.status || "REJECTED"}</span></span>
-                          <span>Priority Score: <span className="font-mono px-1.5 py-0.5 rounded bg-white text-red-600 border border-amber-200 font-bold">{aiClassification.priorityScore ?? 0}/10</span></span>
+                          <span>Score: <span className="font-mono px-1.5 py-0.5 rounded bg-white text-slate-800 border border-amber-200 font-bold">{aiClassification.priorityScore ?? 0}/10</span></span>
                         </div>
                       </div>
                     </div>
@@ -231,11 +248,9 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
                       <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                       <span>{aiClassification.detectedHazard}</span>
                     </p>
-                    <p className="text-[11px] text-slate-600">
-                      Hazard Severity Rating:{" "}
-                      <span className="font-bold text-red-600">
-                        {aiClassification.hazardSeverity}/10
-                      </span>
+                    <p className="text-[11px] text-slate-600 flex items-center justify-between">
+                      <span>Priority Level: <span className="font-bold text-red-600">{getPriorityLevel(aiClassification)}</span></span>
+                      <span className="font-mono text-[10px] text-slate-500">Hazard Rating: {aiClassification.hazardSeverity}/10</span>
                     </p>
                   </>
                 )}

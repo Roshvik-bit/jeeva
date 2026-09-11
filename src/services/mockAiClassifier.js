@@ -9,6 +9,7 @@ export const SAMPLE_DISASTER_IMAGES = [
     url: "https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=640&q=70",
     hazard: "Severe Inundation / Trapped Residents on Elevated Structures",
     severity: 9.7,
+    priorityLevel: "Critical",
     confidence: 97.2,
     visualTags: ["Water Level > 5ft", "Current Speed: 1.8 m/s", "Submerged Transformer", "Hand Gestures Detected"],
     resource: "Rescue Boat",
@@ -25,6 +26,7 @@ export const SAMPLE_DISASTER_IMAGES = [
     url: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=640&q=70",
     hazard: "Bridge Deck Fracture / Vehicle Dangling Over Chasm",
     severity: 9.3,
+    priorityLevel: "Critical",
     confidence: 95.4,
     visualTags: ["Structural Shear Failure", "Arterial Road Severed", "Vehicle Impact", "Secondary Collapse Risk"],
     resource: "Road Clearance Unit",
@@ -41,6 +43,7 @@ export const SAMPLE_DISASTER_IMAGES = [
     url: "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=640&q=70",
     hazard: "Critical Patient Immobility / Hypothermia & Trauma",
     severity: 9.5,
+    priorityLevel: "Critical",
     confidence: 96.8,
     visualTags: ["Immobilized Patient", "Oxygen Requirement", "Elderly Subject", "Inaccessible Roadway"],
     resource: "Medical Team",
@@ -57,6 +60,7 @@ export const SAMPLE_DISASTER_IMAGES = [
     url: "https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=640&q=70",
     hazard: "Electrical Arcing in Floodwaters / Chemical Fire",
     severity: 8.9,
+    priorityLevel: "Critical",
     confidence: 93.6,
     visualTags: ["High Voltage Arc", "Conductive Standing Water", "Toxic Dense Plume", "Flammable Oils"],
     resource: "Fire Tender",
@@ -73,6 +77,7 @@ export const SAMPLE_DISASTER_IMAGES = [
     url: "https://images.unsplash.com/photo-1542314831-c6a4d27376db?auto=format&fit=crop&w=640&q=70",
     hazard: "Vegetation & Mud Obstruction Blocking Escape Route",
     severity: 6.8,
+    priorityLevel: "High",
     confidence: 91.2,
     visualTags: ["Heavy Trunk Diameter > 1m", "Both Lanes Impassable", "Stranded Civilians", "No Crush Fatalities"],
     resource: "Road Clearance Unit",
@@ -89,6 +94,7 @@ export const SAMPLE_DISASTER_IMAGES = [
     url: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=640&q=70",
     hazard: "No Disaster Detected: Coffee cup on indoor desk",
     severity: 0.0,
+    priorityLevel: "Rejected",
     confidence: 98.2,
     visualTags: ["Domestic Table", "Beverage", "No Standing Water", "Non-Emergency Photo"],
     resource: "None (False Alarm)",
@@ -105,6 +111,7 @@ export const SAMPLE_DISASTER_IMAGES = [
     url: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=640&q=70",
     hazard: "No Disaster Detected: Household cat in living room",
     severity: 0.0,
+    priorityLevel: "Rejected",
     confidence: 98.9,
     visualTags: ["Domestic Pet", "Intact Interior", "No Trapped Civilians", "Safe Habitat"],
     resource: "None (False Alarm)",
@@ -434,6 +441,7 @@ export const verifyDisasterReport = async ({
       isFakeReport: true,
       isRealReport: false,
       status: "REJECTED",
+      priorityLevel: "Rejected",
       priorityScore: 0.0,
       verificationStatus: "REJECTED",
       verificationReason: statementCheck.reason,
@@ -463,6 +471,8 @@ export const verifyDisasterReport = async ({
           ...matchingSample,
           detectedHazard: matchingSample.hazard,
           hazardSeverity: 0.0,
+          priorityLevel: isRequiresReview ? "Requires Review" : "Rejected",
+          priorityScore: isRequiresReview ? 1.0 : 0.0,
           confidence: matchingSample.confidence,
           visualTags: matchingSample.visualTags,
           recommendedResource: "None",
@@ -473,16 +483,18 @@ export const verifyDisasterReport = async ({
           isFakeReport: !isRequiresReview,
           isRealReport: false,
           status: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
-          priorityScore: isRequiresReview ? 1.0 : 0.0,
           verificationStatus: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
           verificationReason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
           hasGenuineText: isRequiresReview
         };
       }
 
+      const verifiedLevel = matchingSample.priorityLevel || (matchingSample.severity >= 8.5 ? "Critical" : matchingSample.severity >= 6.5 ? "High" : "Medium");
       return {
         detectedHazard: matchingSample.hazard,
         hazardSeverity: matchingSample.severity,
+        priorityLevel: verifiedLevel,
+        priorityScore: matchingSample.severity,
         confidence: matchingSample.confidence,
         visualTags: matchingSample.visualTags,
         recommendedResource: matchingSample.resource,
@@ -506,6 +518,8 @@ export const verifyDisasterReport = async ({
       return {
         detectedHazard: nameCheck.detectedHazard,
         hazardSeverity: 0.0,
+        priorityLevel: isRequiresReview ? "Requires Review" : "Rejected",
+        priorityScore: isRequiresReview ? 1.0 : 0.0,
         confidence: 97.0,
         visualTags: ["Invalid Image", "Non-Disaster Item", isRequiresReview ? "Requires Review" : "Rejected"],
         recommendedResource: "None",
@@ -516,7 +530,6 @@ export const verifyDisasterReport = async ({
         isFakeReport: !isRequiresReview,
         isRealReport: false,
         status: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
-        priorityScore: isRequiresReview ? 1.0 : 0.0,
         verificationStatus: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
         verificationReason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
         hasGenuineText: isRequiresReview
@@ -609,6 +622,8 @@ Return ONLY a valid JSON object:
                 return {
                   detectedHazard: parsed.detectedHazard || "Non-Emergency Photo Detected (Random Object / Scene)",
                   hazardSeverity: 0.0,
+                  priorityLevel: isRequiresReview ? "Requires Review" : "Rejected",
+                  priorityScore: isRequiresReview ? 1.0 : 0.0,
                   confidence: Number(parsed.confidence) || 96.0,
                   visualTags: parsed.visualTags || ["Invalid Image", "No Disaster Features"],
                   recommendedResource: "None",
@@ -619,7 +634,6 @@ Return ONLY a valid JSON object:
                   isFakeReport: !isRequiresReview,
                   isRealReport: false,
                   status: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
-                  priorityScore: isRequiresReview ? 1.0 : 0.0,
                   verificationStatus: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
                   verificationReason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
                   isLiveAi: true,
@@ -627,9 +641,13 @@ Return ONLY a valid JSON object:
                 };
               }
 
+              const geminiSeverity = Number(parsed.hazardSeverity) || 9.0;
+              const geminiLevel = geminiSeverity >= 8.5 ? "Critical" : geminiSeverity >= 6.5 ? "High" : "Medium";
               return {
                 detectedHazard: parsed.detectedHazard || "Disaster Hazard Verified",
-                hazardSeverity: Number(parsed.hazardSeverity) || 9.0,
+                hazardSeverity: geminiSeverity,
+                priorityLevel: geminiLevel,
+                priorityScore: geminiSeverity,
                 confidence: Number(parsed.confidence) || 96.0,
                 visualTags: parsed.visualTags || ["Disaster Impact", "Rescue Needed"],
                 recommendedResource: parsed.recommendedResource || "Rescue Boat",
@@ -668,6 +686,8 @@ Return ONLY a valid JSON object:
           return {
             detectedHazard: imageValidation.detectedHazard,
             hazardSeverity: 0.0,
+            priorityLevel: isRequiresReview ? "Requires Review" : "Rejected",
+            priorityScore: isRequiresReview ? 1.0 : 0.0,
             confidence: 96.5,
             visualTags: ["Invalid Image", "No Disaster Features", isRequiresReview ? "Requires Review" : "Rejected"],
             recommendedResource: "None",
@@ -678,7 +698,6 @@ Return ONLY a valid JSON object:
             isFakeReport: !isRequiresReview,
             isRealReport: false,
             status: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
-            priorityScore: isRequiresReview ? 1.0 : 0.0,
             verificationStatus: isRequiresReview ? "REQUIRES_REVIEW" : "REJECTED",
             verificationReason: "Image does not appear to match a disaster emergency. Please upload a valid incident photo or provide a detailed text description.",
             hasGenuineText: isRequiresReview
@@ -694,6 +713,7 @@ Return ONLY a valid JSON object:
     flood: {
       detectedHazard: "Inundation Zone / Rising Surface Water Level",
       hazardSeverity: hasMedicalEmergency ? 9.6 : 8.6,
+      priorityLevel: "Critical",
       confidence: 95.5,
       visualTags: ["Submerged Ground", "Water Depth > 4ft", "Vehicle Entrapment", "Flood Inundation"],
       recommendedResource: "Rescue Boat",
@@ -708,6 +728,7 @@ Return ONLY a valid JSON object:
     fire: {
       detectedHazard: "Thermal Combustive Hazard / Industrial Flumes",
       hazardSeverity: hasMedicalEmergency ? 9.8 : 9.0,
+      priorityLevel: "Critical",
       confidence: 96.0,
       visualTags: ["Open Flames", "Dense Toxic Smoke", "Risk of Explosion", "Radiant Heat"],
       recommendedResource: "Fire Tender",
@@ -722,6 +743,7 @@ Return ONLY a valid JSON object:
     medical: {
       detectedHazard: "Acute Medical Trauma / Life Preservation Impasse",
       hazardSeverity: 9.8,
+      priorityLevel: "Critical",
       confidence: 98.2,
       visualTags: ["Critical Patient", "Paramedic Intervention Required", "Vital Signs Compromised"],
       recommendedResource: "Medical Team",
@@ -736,6 +758,7 @@ Return ONLY a valid JSON object:
     trapped: {
       detectedHazard: "Civilian Entrapment / Extraction Required",
       hazardSeverity: 9.5,
+      priorityLevel: "Critical",
       confidence: 96.0,
       visualTags: ["Stranded Victims", "No Egress Route", "Impassable Perimeter", "Life Threat"],
       recommendedResource: "Rescue Boat",
@@ -750,6 +773,7 @@ Return ONLY a valid JSON object:
     landslide: {
       detectedHazard: "Slope Instability & Roadway Mud Ingress",
       hazardSeverity: hasMedicalEmergency ? 9.2 : 7.8,
+      priorityLevel: hasMedicalEmergency ? "Critical" : "High",
       confidence: 93.8,
       visualTags: ["Earth Movement", "Highway Blocked", "Unstable Escarpment", "Rockfall Danger"],
       recommendedResource: "Road Clearance Unit",
@@ -764,6 +788,7 @@ Return ONLY a valid JSON object:
     cyclone: {
       detectedHazard: "Extreme Gale Wind Damage & Squall Inundation",
       hazardSeverity: 8.5,
+      priorityLevel: "Critical",
       confidence: 92.5,
       visualTags: ["Uprooted Trees", "Structural Roof Failure", "High Velocity Gales"],
       recommendedResource: "Rescue Boat",
@@ -778,6 +803,7 @@ Return ONLY a valid JSON object:
     collapse: {
       detectedHazard: "Masonry & Structural Shear Collapse",
       hazardSeverity: 9.5,
+      priorityLevel: "Critical",
       confidence: 96.4,
       visualTags: ["Rubble Cavities", "Crushed Beams", "Entombed Victims Risk"],
       recommendedResource: "Road Clearance Unit",
