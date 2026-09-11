@@ -14,6 +14,31 @@ export const calculatePriorityScore = (incident) => {
     corroboratingReportsCount = 1
   } = incident;
 
+  // 0. False Alarm Check: Deprioritize invalid non-disaster photos
+  const isFalseAlarm = Boolean(
+    aiClassification?.isFalseAlarm ||
+    aiClassification?.isValidDisaster === false ||
+    aiClassification?.urgencyAssessment === "FALSE_ALARM_DISMISSED"
+  );
+
+  if (isFalseAlarm) {
+    const reason = aiClassification?.verificationReason || "Image verification flagged as non-emergency photo.";
+    return {
+      priorityScore: 0.5,
+      severity: "False Alarm",
+      isFalseAlarm: true,
+      scoreBreakdown: {
+        peopleScore: 0,
+        medicalScore: 0,
+        categoryScore: 0,
+        aiHazardScore: 0.5,
+        recencyScore: 0,
+        corroborationScore: 0,
+        explanation: `⚠️ Flagged as False Alarm (Score 0.5/10): ${reason} Deprioritized to bottom of queue.`
+      }
+    };
+  }
+
   // 1. People / Victims Weight (Max: 3.5)
   let peopleScore = 1.0;
   if (peopleCount >= 20) peopleScore = 3.5;

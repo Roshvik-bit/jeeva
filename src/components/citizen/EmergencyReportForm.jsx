@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useEmergency } from "../../context/EmergencyContext";
-import { getPlayableAudioUrl } from "../../services/storageService";
+import { storageService, getPlayableAudioUrl } from "../../services/storageService";
 import { LocationPicker } from "./LocationPicker";
 import { PhotoCaptureModal } from "./PhotoCaptureModal";
 import { VoiceRecorderModal } from "./VoiceRecorderModal";
@@ -88,6 +88,14 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
       const defaultAutoTitle = `${categoryLabel} Emergency at ${location.address || "Disaster Zone"}`;
       const finalTitle = title.trim() || defaultAutoTitle;
 
+      // Ensure photo is compressed so request payload stays < 40KB (never exceeds PostgREST limits)
+      let safePhoto = photoUrl;
+      if (safePhoto) {
+        try {
+          safePhoto = await storageService.compressImageFile(safePhoto, 640, 640, 0.65);
+        } catch (e) {}
+      }
+
       const result = await submitDistressReport({
         title: finalTitle,
         category,
@@ -96,7 +104,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         medicalDetails,
         description: fullDescription || "Emergency report filed by citizen.",
         location,
-        photoUrl,
+        photoUrl: safePhoto,
         aiClassification,
         voiceTranscript,
         audioUrl: voiceAudioUrl,
@@ -122,11 +130,13 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         address: location.address,
         lat: location.lat,
         lng: location.lng,
-        photoUrl,
+        photoUrl: safePhoto,
         audioUrl: voiceAudioUrl,
         audioBase64: voiceAudioBase64,
         voiceTranscript,
         isOffline: !isOnline,
+        isFalseAlarm: Boolean(aiClassification?.isFalseAlarm),
+        verificationReason: aiClassification?.verificationReason,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       });
 

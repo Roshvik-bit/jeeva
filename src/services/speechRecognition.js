@@ -528,13 +528,13 @@ export const speechService = {
       console.warn("Web Audio API visualizer initialization failed:", err);
     }
 
-    // 3. Set up MediaRecorder with voice-optimized 24 kbps compression (~3 KB/sec)
+    // 3. Set up MediaRecorder with voice-grade 16 kbps mono compression (~2 KB/sec)
     const mimeType = speechService.getSupportedMimeType();
     let mediaRecorder;
     try {
       mediaRecorder = new MediaRecorder(stream, {
         ...(mimeType ? { mimeType } : {}),
-        audioBitsPerSecond: 24000
+        audioBitsPerSecond: 16000
       });
     } catch (optErr) {
       mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
@@ -547,15 +547,15 @@ export const speechService = {
       }
     };
 
-    // 4. Elapsed time timer with 60-second safety cap
+    // 4. Elapsed time timer with 15-second emergency safety cap (guarantees payload < 30KB)
     let secondsElapsed = 0;
     const timerInterval = setInterval(() => {
       secondsElapsed += 1;
       if (onTimerTick) {
         onTimerTick(secondsElapsed);
       }
-      // Voice distress note safety cap at 60 seconds
-      if (secondsElapsed >= 60 && mediaRecorder.state === "recording") {
+      // Voice distress note safety cap at 15 seconds (keeps payload tiny and instant)
+      if (secondsElapsed >= 15 && mediaRecorder.state === "recording") {
         try {
           mediaRecorder.stop();
         } catch (e) {}

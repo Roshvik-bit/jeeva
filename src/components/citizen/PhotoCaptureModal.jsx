@@ -19,7 +19,7 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
         const response = await fetch(sample.url);
         if (response.ok) {
           const blob = await response.blob();
-          const compressed = await storageService.compressImageFile(blob, 1000, 1000, 0.8);
+          const compressed = await storageService.compressImageFile(blob, 640, 640, 0.65);
           setPhotoUrl(compressed || sample.url);
         } else {
           setPhotoUrl(sample.url);
@@ -43,7 +43,7 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
 
     setIsAnalyzing(true);
     try {
-      const compressedDataUrl = await storageService.compressImageFile(file, 1000, 1000, 0.8);
+      const compressedDataUrl = await storageService.compressImageFile(file, 640, 640, 0.65);
       const finalUrl = compressedDataUrl || file;
       setPhotoUrl(finalUrl);
 
@@ -159,41 +159,88 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
             )}
           </div>
 
-          {/* AI Vision Insights Card */}
+          {/* AI Vision Insights & False Alarm Verification Card */}
           {aiClassification && !isAnalyzing && (
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+            <div
+              className={`border rounded-xl p-3 space-y-2.5 transition-all ${
+                aiClassification.isFalseAlarm
+                  ? "bg-amber-50/90 border-amber-300 shadow-xs"
+                  : "bg-slate-50 border-slate-200"
+              }`}
+            >
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-700">
-                  <Sparkles className="w-4 h-4 text-blue-600" />
-                  <span>AI-assisted image analysis</span>
+                <div
+                  className={`flex items-center gap-1.5 text-xs font-bold ${
+                    aiClassification.isFalseAlarm ? "text-amber-800" : "text-blue-700"
+                  }`}
+                >
+                  {aiClassification.isFalseAlarm ? (
+                    <>
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>⚠️ False Alarm Detected</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span>✓ Verified Disaster Image</span>
+                    </>
+                  )}
                 </div>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                    aiClassification.isFalseAlarm
+                      ? "bg-amber-100 text-amber-900 border-amber-300"
+                      : "bg-emerald-100 text-emerald-800 border-emerald-200"
+                  }`}
+                >
                   Confidence: {aiClassification.confidence}%
                 </span>
               </div>
 
-              <div className="space-y-1">
-                <p className="text-xs font-semibold text-slate-800 flex items-start gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
-                  <span>{aiClassification.detectedHazard}</span>
-                </p>
-                <p className="text-[11px] text-slate-600">
-                  Hazard Severity Rating:{" "}
-                  <span className="font-bold text-red-600">
-                    {aiClassification.hazardSeverity}/10
-                  </span>
-                </p>
+              {/* Verification Details */}
+              <div className="space-y-1.5">
+                {aiClassification.isFalseAlarm ? (
+                  <div className="p-2.5 rounded-lg bg-white/90 border border-amber-200 text-xs space-y-1">
+                    <p className="font-bold text-amber-900 flex items-center gap-1">
+                      <span>Picture does not appear to show a valid disaster scene!</span>
+                    </p>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      {aiClassification.verificationReason ||
+                        "AI vision detected no active floodwaters, structural damage, fire, or trauma."}
+                    </p>
+                    <p className="text-[10px] text-amber-700 font-semibold pt-1 border-t border-amber-100">
+                      Triage Notice: This report will be tagged with priority 0.5 (Lowest) as an unverified false alarm.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-xs font-semibold text-slate-800 flex items-start gap-1.5">
+                      <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>{aiClassification.detectedHazard}</span>
+                    </p>
+                    <p className="text-[11px] text-slate-600">
+                      Hazard Severity Rating:{" "}
+                      <span className="font-bold text-red-600">
+                        {aiClassification.hazardSeverity}/10
+                      </span>
+                    </p>
+                  </>
+                )}
               </div>
 
-              {/* Visual Tags */}
+              {/* Visual Observation Tags */}
               {aiClassification.visualTags && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
                   {aiClassification.visualTags.map((tag, i) => (
                     <span
                       key={i}
-                      className="text-[10px] font-medium bg-white text-slate-700 px-2 py-0.5 rounded-md border border-slate-200"
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded-md border ${
+                        aiClassification.isFalseAlarm
+                          ? "bg-white text-amber-800 border-amber-200"
+                          : "bg-white text-slate-700 border-slate-200"
+                      }`}
                     >
-                      ✓ {tag}
+                      {aiClassification.isFalseAlarm ? "⚠️" : "✓"} {tag}
                     </span>
                   ))}
                 </div>

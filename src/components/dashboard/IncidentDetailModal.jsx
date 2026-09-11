@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useEmergency } from "../../context/EmergencyContext";
 import { storageService, getPlayableAudioUrl } from "../../services/storageService";
 import { DispatchUnitModal } from "./DispatchUnitModal";
@@ -17,6 +17,48 @@ import {
   FileText
 } from "lucide-react";
 
+const AudioPlayerSection = React.memo(({ audioSrc, incidentId }) => {
+  const [loadError, setLoadError] = useState(false);
+
+  if (!audioSrc || loadError) {
+    return (
+      <div className="p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-slate-500 text-[11px] flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Volume2 className="w-3.5 h-3.5 text-slate-400" />
+          <span>Audio recording unavailable or archived.</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200 text-slate-700 space-y-2">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-1.5 font-bold text-blue-900">
+          <Volume2 className="w-3.5 h-3.5 text-blue-600" />
+          <span>Recorded Civilian Voice Note</span>
+        </div>
+        <a
+          href={audioSrc}
+          download={`incident_${incidentId}_audio.webm`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
+        >
+          Open Audio File ↗
+        </a>
+      </div>
+      <audio
+        src={audioSrc}
+        controls
+        preload="metadata"
+        className="w-full h-8 rounded"
+        onError={() => setLoadError(true)}
+      />
+    </div>
+  );
+});
+
 export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
   const { updateIncidentStatus, rescueUnits, t } = useEmergency();
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
@@ -24,7 +66,10 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
   if (!isOpen || !incident) return null;
 
   const assignedUnitObj = rescueUnits.find((u) => u.id === incident.assignedUnit);
-  const audioSrc = getPlayableAudioUrl(incident.audioUrl || incident.audioBase64);
+  const audioSrc = useMemo(
+    () => getPlayableAudioUrl(incident.audioUrl || incident.audioBase64),
+    [incident?.id, incident?.audioUrl, incident?.audioBase64]
+  );
 
   const handleStatusChange = (newStatus) => {
     updateIncidentStatus(incident.id, newStatus);
@@ -349,25 +394,8 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                   </div>
                 </div>
               )}
-              {audioSrc && (
-                <div className="p-3 rounded-xl bg-blue-50/80 border border-blue-200 text-slate-700 space-y-2">
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <div className="flex items-center gap-1.5 font-bold text-blue-900">
-                      <Volume2 className="w-3.5 h-3.5 text-blue-600" />
-                      <span>Recorded Civilian Voice Call</span>
-                    </div>
-                    <a
-                      href={audioSrc}
-                      download={`incident_${incident.id}_audio.webm`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1"
-                    >
-                      Open Audio File ↗
-                    </a>
-                  </div>
-                  <audio src={audioSrc} controls preload="metadata" className="w-full h-8 rounded" />
-                </div>
+              {(incident.audioUrl || incident.audioBase64) && (
+                <AudioPlayerSection audioSrc={audioSrc} incidentId={incident.id} />
               )}
             </div>
           </div>

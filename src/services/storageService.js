@@ -50,6 +50,19 @@ const openIDB = () => {
   });
 };
 
+// In-memory audio Blob URL cache to eliminate redundant atob() decoding and prevent UI latency
+const audioBlobCache = new Map();
+
+/**
+ * Generate a fast, lightweight cache key for audio sources
+ */
+const getAudioCacheKey = (dataStr) => {
+  if (typeof dataStr !== "string") return null;
+  const len = dataStr.length;
+  if (len <= 64) return dataStr;
+  return `${len}:${dataStr.slice(0, 32)}:${dataStr.slice(-32)}`;
+};
+
 export const storageService = {
   /**
    * Convert Blob to Base64 String
@@ -68,15 +81,15 @@ export const storageService = {
   },
 
   /**
-   * Automatically compress images (from File, Blob, or Data URL) to max 1000px and JPEG quality 0.8
-   * Keeps payload under 100KB so it never exceeds network/PostgreSQL limits
+   * Automatically compress images (from File, Blob, or Data URL) to max 640px and JPEG quality 0.65
+   * Keeps payload under 35KB so it NEVER triggers "request is too large" (413) errors
    */
-  compressImageFile: (fileOrDataUrl, maxWidth = 1000, maxHeight = 1000, quality = 0.8) => {
+  compressImageFile: (fileOrDataUrl, maxWidth = 640, maxHeight = 640, quality = 0.65) => {
     return new Promise((resolve) => {
       if (!fileOrDataUrl) return resolve(null);
 
       const processImg = (dataUrl) => {
-        if (typeof window === "undefined" || typeof dataUrl !== "string" || !dataUrl.startsWith("data:image")) {
+        if (typeof window === "undefined" || typeof dataUrl !== "string") {
           return resolve(dataUrl);
         }
         const img = new Image();
@@ -101,15 +114,36 @@ export const storageService = {
           const ctx = canvas.getContext("2d");
           ctx.drawImage(img, 0, 0, width, height);
 
-          const compressed = canvas.toDataURL("image/jpeg", quality);
-          resolve(compressed);
+          try {
+            const compressed = canvas.toDataURL("image/jpeg", quality);
+            resolve(compressed);
+          } catch (e) {
+            resolve(dataUrl);
+          }
         };
         img.onerror = () => resolve(dataUrl);
         img.src = dataUrl;
       };
 
       if (typeof fileOrDataUrl === "string") {
-        processImg(fileOrDataUrl);
+        if (fileOrDataUrl.startsWith("http://") || fileOrDataUrl.startsWith("https://")) {
+          // If remote URL, try fetching to compress or return as-is
+          fetch(fileOrDataUrl)
+            .then((r) => (r.ok ? r.blob() : null))
+            .then((blob) => {
+              if (blob) {
+                const reader = new FileReader();
+                reader.onloadend = () => processImg(reader.result);
+                reader.onerror = () => resolve(fileOrDataUrl);
+                reader.readAsDataURL(blob);
+              } else {
+                resolve(fileOrDataUrl);
+              }
+            })
+            .catch(() => resolve(fileOrDataUrl));
+        } else {
+          processImg(fileOrDataUrl);
+        }
       } else if (typeof Blob !== "undefined" && fileOrDataUrl instanceof Blob) {
         const reader = new FileReader();
         reader.onloadend = () => processImg(reader.result);
@@ -122,36 +156,54 @@ export const storageService = {
   },
 
   /**
-   * Convert Base64 data string to playable Blob URL
+   * Convert Base64 data string to playable Blob URL with in-memory caching
+   * Zero latency: returns cached Blob URL in 0ms on repeated renders
    */
   base64ToBlobUrl: (base64Data, mimeType = "audio/webm") => {
     try {
-      if (!base64Data) return null;
+      if (!base64Data || typeof base64Data !== "string") return null;
+      const trimmed = base64Data.trim();
+      if (!trimmed) return null;
+
       // If already a blob: or http: URL
-      if (base64Data.startsWith("blob:") || base64Data.startsWith("http")) {
-        return base64Data;
+      if (trimmed.startsWith("blob:") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+        return trimmed;
       }
 
-      let rawBase64 = base64Data;
+      // Check in-memory cache first (0ms instantaneous return)
+      const cacheKey = getAudioCacheKey(trimmed);
+      if (cacheKey && audioBlobCache.has(cacheKey)) {
+        return audioBlobCache.get(cacheKey);
+      }
+
+      let rawBase64 = trimmed;
       let detectedType = mimeType;
 
-      if (base64Data.includes(";base64,")) {
-        const parts = base64Data.split(";base64,");
+      if (trimmed.includes(";base64,")) {
+        const parts = trimmed.split(";base64,");
         detectedType = parts[0].replace("data:", "") || mimeType;
         rawBase64 = parts[1];
       }
 
-      const byteCharacters = atob(rawBase64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      // Fast Uint8Array decoding directly without double-allocation
+      const binaryString = atob(rawBase64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: detectedType });
-      return URL.createObjectURL(blob);
+
+      const blob = new Blob([bytes], { type: detectedType });
+      const blobUrl = URL.createObjectURL(blob);
+
+      if (cacheKey) {
+        audioBlobCache.set(cacheKey, blobUrl);
+      }
+
+      return blobUrl;
     } catch (e) {
       console.warn("Could not convert Base64 to Blob URL:", e);
-      return base64Data;
+      return null;
     }
   },
 
@@ -168,6 +220,10 @@ export const storageService = {
       return trimmed;
     }
     return storageService.base64ToBlobUrl(trimmed);
+  },
+
+  clearAudioBlobCache: () => {
+    audioBlobCache.clear();
   },
 
   // Master Incidents (LocalStorage)

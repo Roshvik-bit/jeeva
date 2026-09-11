@@ -97,6 +97,13 @@ export const VoiceRecorderModal = ({
     };
   }, [audioUrl]);
 
+  // Enforce emergency 15-second cap to keep voice payloads lightweight and fast
+  useEffect(() => {
+    if (isRecording && recordingSeconds >= 15) {
+      stopVoiceRecording();
+    }
+  }, [isRecording, recordingSeconds]);
+
   /**
    * Start Live Audio Recording & Speech Recognition
    */
@@ -437,7 +444,7 @@ export const VoiceRecorderModal = ({
             {isRecording ? (
               <span className="flex items-center gap-1.5 font-bold text-red-600 font-mono">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
-                <span>RECORDING ({activeLangName})</span>
+                <span>REC ({activeLangName}) • {Math.max(0, 15 - recordingSeconds)}s</span>
               </span>
             ) : recordingStatus === "transcribing" ? (
               <span className="flex items-center gap-1.5 font-bold text-blue-600 text-[11px] animate-pulse">

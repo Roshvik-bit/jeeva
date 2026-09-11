@@ -62,6 +62,13 @@ export const mapIncidentToRow = (incident) => {
   if (persistentAudio && persistentAudio.startsWith("blob:") && incident.audioBase64) {
     persistentAudio = incident.audioBase64;
   }
+  // Safeguard: guard against massive audio blobs in PostgreSQL column to ensure zero latency
+  if (persistentAudio && typeof persistentAudio === "string" && !persistentAudio.startsWith("http")) {
+    if (persistentAudio.length > 75000) {
+      console.warn("Audio payload exceeds 75KB column safety threshold, omitting from column");
+      persistentAudio = null;
+    }
+  }
 
   return {
     id: incident.id,
