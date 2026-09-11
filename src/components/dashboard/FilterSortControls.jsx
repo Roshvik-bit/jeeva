@@ -1,4 +1,5 @@
 import React from "react";
+import { useEmergency } from "../../context/EmergencyContext";
 import { Search, Filter, ArrowUpDown } from "lucide-react";
 
 export const FilterSortControls = ({
@@ -13,6 +14,8 @@ export const FilterSortControls = ({
   sortBy,
   setSortBy
 }) => {
+  const { t } = useEmergency();
+
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-3 space-y-2.5 shadow-sm">
       {/* Search Input */}
@@ -22,7 +25,7 @@ export const FilterSortControls = ({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search by area, landmark, category, or ID..."
+          placeholder={t.searchPlaceholder || "Search by area, landmark, category, or ID..."}
           className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
         />
       </div>
@@ -35,13 +38,13 @@ export const FilterSortControls = ({
           onChange={(e) => setSelectedCategory(e.target.value)}
           className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-blue-600"
         >
-          <option value="all">All Categories</option>
-          <option value="flood">Flood / Submerged</option>
-          <option value="collapse">Structural Collapse</option>
-          <option value="medical">Medical Emergency</option>
-          <option value="fire">Fire / Hazmat</option>
-          <option value="landslide">Landslide / Road Block</option>
-          <option value="cyclone">Cyclone</option>
+          <option value="all">{t.allCategories || "All Categories"}</option>
+          <option value="flood">{t.flood || "Flood"} / Submerged</option>
+          <option value="collapse">{t.collapse || "Structural Collapse"}</option>
+          <option value="medical">{t.medical || "Medical Emergency"}</option>
+          <option value="fire">{t.fire || "Fire"} / Hazmat</option>
+          <option value="landslide">{t.landslide || "Landslide"}</option>
+          <option value="cyclone">{t.cyclone || "Cyclone"}</option>
         </select>
 
         {/* Severity */}
@@ -50,9 +53,9 @@ export const FilterSortControls = ({
           onChange={(e) => setSelectedSeverity(e.target.value)}
           className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-blue-600"
         >
-          <option value="all">All Severities</option>
-          <option value="Critical">Critical</option>
-          <option value="High">High</option>
+          <option value="all">{t.allSeverities || "All Severities"}</option>
+          <option value="Critical">{t.criticalCard || "Critical"}</option>
+          <option value="High">{t.highPriorityCard || "High"}</option>
           <option value="Medium">Medium</option>
           <option value="Low">Low</option>
         </select>
@@ -63,11 +66,11 @@ export const FilterSortControls = ({
           onChange={(e) => setSelectedStatus(e.target.value)}
           className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 focus:bg-white focus:outline-none focus:border-blue-600"
         >
-          <option value="all">All Statuses</option>
-          <option value="Pending">Pending Verification</option>
-          <option value="Dispatched">Unit Dispatched</option>
-          <option value="On Scene">On Scene</option>
-          <option value="Resolved">Resolved</option>
+          <option value="all">{t.allStatuses || "All Statuses"}</option>
+          <option value="Pending">{t.statusPending || "Pending Verification"}</option>
+          <option value="Dispatched">{t.statusDispatched || "Unit Dispatched"}</option>
+          <option value="On Scene">{t.statusOnScene || "On Scene"}</option>
+          <option value="Resolved">{t.statusResolved || "Resolved"}</option>
         </select>
 
         {/* Sort By */}
@@ -76,9 +79,9 @@ export const FilterSortControls = ({
           onChange={(e) => setSortBy(e.target.value)}
           className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-blue-700 font-semibold focus:bg-white focus:outline-none focus:border-blue-600"
         >
-          <option value="priority">Sort: Priority Score (High)</option>
-          <option value="people">Sort: Most Trapped</option>
-          <option value="recent">Sort: Most Recent</option>
+          <option value="priority">{t.sortPriority || "Sort: Priority Score (High)"}</option>
+          <option value="people">{t.sortPeople || "Sort: Most Trapped"}</option>
+          <option value="recent">{t.sortRecent || "Sort: Most Recent"}</option>
         </select>
       </div>
     </div>

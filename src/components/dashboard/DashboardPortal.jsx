@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 export const DashboardPortal = () => {
-  const { incidents, rescueUnits, isOnline, setActivePortal } = useEmergency();
+  const { incidents, rescueUnits, isOnline, setActivePortal, t } = useEmergency();
 
   const [selectedIncident, setSelectedIncident] = useState(null);
   const [dispatchTargetIncident, setDispatchTargetIncident] = useState(null);
@@ -101,12 +101,12 @@ export const DashboardPortal = () => {
 
   // Sidebar navigation items
   const sidebarNavItems = [
-    { id: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
-    { id: "incidents", label: "Incidents", icon: <ShieldAlert className="w-4 h-4" />, count: incidents.filter(i => i.status !== "Resolved").length },
-    { id: "map", label: "Map", icon: <MapIcon className="w-4 h-4" /> },
-    { id: "alerts", label: "Alerts", icon: <Bell className="w-4 h-4" />, count: incidents.filter(i => (i.severity === "Critical" || i.priorityScore >= 85) && i.status !== "Resolved").length, alertBadge: true },
-    { id: "resources", label: "Resources", icon: <Truck className="w-4 h-4" />, count: `${rescueUnits.filter(u => u.status === "Available").length}/${rescueUnits.length}` },
-    { id: "status", label: "System Status", icon: <Activity className="w-4 h-4" /> }
+    { id: "dashboard", label: t.dashboard || "Dashboard", icon: <LayoutDashboard className="w-4 h-4" /> },
+    { id: "incidents", label: t.incidents || "Incidents", icon: <ShieldAlert className="w-4 h-4" />, count: incidents.filter(i => i.status !== "Resolved").length },
+    { id: "map", label: t.map || "Map", icon: <MapIcon className="w-4 h-4" /> },
+    { id: "alerts", label: t.alerts || "Alerts", icon: <Bell className="w-4 h-4" />, count: incidents.filter(i => (i.severity === "Critical" || i.priorityScore >= 85) && i.status !== "Resolved").length, alertBadge: true },
+    { id: "resources", label: t.resources || "Resources", icon: <Truck className="w-4 h-4" />, count: `${rescueUnits.filter(u => u.status === "Available").length}/${rescueUnits.length}` },
+    { id: "status", label: t.systemStatus || "System Status", icon: <Activity className="w-4 h-4" /> }
   ];
 
   const handleSidebarClick = (id) => {
@@ -126,7 +126,7 @@ export const DashboardPortal = () => {
       <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-slate-200 bg-white p-4 space-y-6">
         <div>
           <div className="flex items-center gap-2 px-2 py-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
-            <span>Navigation</span>
+            <span>{t.navigation || "Navigation"}</span>
           </div>
           <nav className="mt-2 space-y-1">
             {sidebarNavItems.map((item) => {
@@ -172,10 +172,10 @@ export const DashboardPortal = () => {
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
               <span className="flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5 text-blue-600" /> Fleet Readiness
+                <Truck className="w-3.5 h-3.5 text-blue-600" /> {t.fleetReadiness || "Fleet Readiness"}
               </span>
               <span className="text-teal-700 font-mono font-bold">
-                {rescueUnits.filter((u) => u.status === "Available").length} Ready
+                {rescueUnits.filter((u) => u.status === "Available").length} {t.readyCount || "Ready"}
               </span>
             </div>
             <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
@@ -195,7 +195,7 @@ export const DashboardPortal = () => {
             onClick={() => setActivePortal("citizen")}
             className="w-full py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-bold flex items-center justify-between transition-colors"
           >
-            <span>Citizen App</span>
+            <span>{t.switchToCitizen || "Citizen App"}</span>
             <ExternalLink className="w-3.5 h-3.5 text-blue-600" />
           </button>
         </div>
@@ -212,7 +212,7 @@ export const DashboardPortal = () => {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
               </span>
               <span className="text-xs font-bold uppercase tracking-wider text-green-700 font-mono">
-                System Online
+                {t.systemOnline || "System Online"}
               </span>
             </div>
 
@@ -220,7 +220,7 @@ export const DashboardPortal = () => {
 
             <div className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
               <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>Last synchronized: <strong className="text-slate-800 font-mono">{lastSyncTime}</strong></span>
+              <span>{t.lastSynchronized || "Last synchronized"}: <strong className="text-slate-800 font-mono">{lastSyncTime}</strong></span>
             </div>
           </div>
 
@@ -278,11 +278,11 @@ export const DashboardPortal = () => {
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <MapIcon className="w-4 h-4 text-blue-600" />
-                <span>Live Disaster Operations Map</span>
+                <span>{t.liveOperationsMap || "Live Disaster Operations Map"}</span>
               </h3>
               <span className="text-[11px] font-medium text-slate-600 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-green-600"></span>
-                OpenStreetMap Active
+                {t.openStreetMapActive || "OpenStreetMap Active"}
               </span>
             </div>
 
@@ -316,7 +316,7 @@ export const DashboardPortal = () => {
             {/* Results Counter Header */}
             <div className="flex items-center justify-between text-xs text-slate-600 px-1">
               <span className="font-semibold text-slate-800">
-                Ranked Incident Queue ({filteredIncidents.length})
+                {t.rankedQueue || "Ranked Incident Queue"} ({filteredIncidents.length})
               </span>
               <span className="text-[11px] font-mono text-slate-500">
                 Sort:{" "}

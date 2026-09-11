@@ -14,6 +14,7 @@ export const Navbar = () => {
     setActivePortal,
     language,
     setLanguage,
+    t,
     isOnline,
     toggleOnlineStatus,
     offlineOutbox,
@@ -44,10 +45,10 @@ export const Navbar = () => {
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight text-slate-900 leading-none">
-                JEEVA
+                {t.appName || "JEEVA"}
               </span>
               <span className="text-[11px] text-slate-500 font-medium hidden sm:inline mt-0.5">
-                Disaster Response Platform
+                {t.appSubtitle || "Disaster Response Platform"}
               </span>
             </div>
           </button>
@@ -64,7 +65,7 @@ export const Navbar = () => {
             }`}
           >
             <Radio className="w-4 h-4" />
-            <span>Citizen App</span>
+            <span>{t.switchToCitizen || "Citizen App"}</span>
           </button>
 
           <button
@@ -76,7 +77,7 @@ export const Navbar = () => {
             }`}
           >
             <LayoutDashboard className="w-4 h-4" />
-            <span>Rescue Dashboard</span>
+            <span>{t.switchToDashboard || "Rescue Dashboard"}</span>
           </button>
         </nav>
 
@@ -97,7 +98,7 @@ export const Navbar = () => {
                 isOnline ? "bg-green-600" : "bg-red-600"
               }`}
             />
-            <span>{isOnline ? "Online" : "Offline"}</span>
+            <span>{isOnline ? (t.online || "Online") : (t.offline || "Offline")}</span>
             {!isOnline && offlineOutbox.length > 0 && (
               <span className="ml-1 px-1.5 py-0.2 bg-red-600 text-white text-[10px] font-bold rounded-full">
                 {offlineOutbox.length}

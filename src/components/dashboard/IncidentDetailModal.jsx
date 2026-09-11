@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
-  const { updateIncidentStatus, rescueUnits } = useEmergency();
+  const { updateIncidentStatus, rescueUnits, t } = useEmergency();
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
 
   if (!isOpen || !incident) return null;
@@ -80,7 +80,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {/* Priority Score */}
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-              <p className="text-[10px] uppercase font-bold text-slate-500">Priority Score</p>
+              <p className="text-[10px] uppercase font-bold text-slate-500">{t.priorityScore || "Priority Score"}</p>
               <p className="text-xl font-bold font-mono text-red-600 mt-0.5">
                 {incident.priorityScore}/100
               </p>
@@ -88,7 +88,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
 
             {/* Trapped Victims */}
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-              <p className="text-[10px] uppercase font-bold text-slate-500">People Affected</p>
+              <p className="text-[10px] uppercase font-bold text-slate-500">{t.peopleAffectedLabel || "People Affected"}</p>
               <p className="text-xl font-bold font-mono text-orange-600 mt-0.5">
                 {incident.peopleCount}
               </p>
@@ -104,9 +104,9 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
 
             {/* Status */}
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
-              <p className="text-[10px] uppercase font-bold text-slate-500">Status</p>
+              <p className="text-[10px] uppercase font-bold text-slate-500">{t.statusLabel || "Status"}</p>
               <p className="text-xs font-bold font-mono text-blue-700 mt-1.5 uppercase">
-                {incident.status}
+                {incident.status === "Resolved" ? (t.statusResolved || "Resolved") : incident.status}
               </p>
             </div>
           </div>
@@ -395,29 +395,34 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
                 className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all"
               >
                 <Truck className="w-3.5 h-3.5" />
-                <span>{incident.assignedUnit ? "Re-assign Unit" : "Dispatch Unit"}</span>
+                <span>{incident.assignedUnit ? (t.reassign || "Re-assign Unit") : (t.dispatch || "Dispatch Unit")}</span>
               </button>
             </div>
 
             {/* Status Workflow Selector Tabs */}
             <div className="pt-2 border-t border-slate-200 space-y-1.5">
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                Progress Status:
+                {t.statusLabel || "Progress Status"}:
               </label>
               <div className="grid grid-cols-4 gap-1.5">
-                {["Pending", "Dispatched", "On Scene", "Resolved"].map((st) => (
+                {[
+                  { id: "Pending", label: t.statusPending || "Pending" },
+                  { id: "Dispatched", label: t.statusDispatched || "Dispatched" },
+                  { id: "On Scene", label: t.statusOnScene || "On Scene" },
+                  { id: "Resolved", label: t.statusResolved || "Resolved" }
+                ].map((st) => (
                   <button
-                    key={st}
-                    onClick={() => handleStatusChange(st)}
-                    className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
-                      incident.status === st
-                        ? st === "Resolved"
+                    key={st.id}
+                    onClick={() => handleStatusChange(st.id)}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all truncate ${
+                      incident.status === st.id
+                        ? st.id === "Resolved"
                           ? "bg-green-600 text-white shadow-sm"
                           : "bg-blue-600 text-white shadow-sm"
                         : "bg-white hover:bg-slate-100 text-slate-700 border border-slate-200"
                     }`}
                   >
-                    {st}
+                    {st.label}
                   </button>
                 ))}
               </div>
@@ -431,7 +436,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
             onClick={onClose}
             className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition-colors"
           >
-            Close
+            {t.cancel || "Close"}
           </button>
         </div>
       </div>

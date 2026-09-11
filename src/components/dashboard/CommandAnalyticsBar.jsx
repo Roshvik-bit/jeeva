@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 export const CommandAnalyticsBar = () => {
-  const { incidents, rescueUnits, addToast } = useEmergency();
+  const { incidents, rescueUnits, addToast, t } = useEmergency();
 
   const activeIncidents = incidents.filter((i) => i.status !== "Resolved").length;
   const resolvedCount = incidents.filter((i) => i.status === "Resolved").length;
@@ -62,21 +62,21 @@ export const CommandAnalyticsBar = () => {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-green-600"></span>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              Incident Command & Operations
+              {t.incidentCommand || "Incident Command & Operations"}
             </h2>
             <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
-              Live Feed
+              {t.liveFeed || "Live Feed"}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Real-time multi-source disaster triage, automated clustering & tactical routing
+            {t.telemetrySubtitle || "Real-time multi-source disaster triage, automated clustering & tactical routing"}
           </p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-[11px] text-slate-700 shadow-sm font-medium">
             <Activity className="w-3.5 h-3.5 text-teal-600" />
-            <span>Units Deployed: <strong className="text-slate-900">{unitsDeployed} / {rescueUnits.length}</strong></span>
+            <span>{t.unitsDeployed || "Units Deployed"}: <strong className="text-slate-900">{unitsDeployed} / {rescueUnits.length}</strong></span>
           </div>
 
           <button
@@ -84,7 +84,7 @@ export const CommandAnalyticsBar = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 hover:text-slate-900 transition-colors shadow-sm"
           >
             <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600" />
-            <span>Export Brief</span>
+            <span>{t.exportBrief || "Export Brief"}</span>
           </button>
         </div>
       </div>
@@ -95,7 +95,7 @@ export const CommandAnalyticsBar = () => {
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              Active Incidents
+              {t.activeIncidentsCard || "Active Incidents"}
             </span>
             <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center">
               <AlertOctagon className="w-4 h-4" />
@@ -106,7 +106,7 @@ export const CommandAnalyticsBar = () => {
           </p>
           <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-slate-500">
             <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-            <span>{resolvedCount} resolved so far</span>
+            <span>{resolvedCount} {t.resolvedSoFar || "resolved so far"}</span>
           </div>
         </div>
 
@@ -115,7 +115,7 @@ export const CommandAnalyticsBar = () => {
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-red-700 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-red-600"></span>
-              Critical
+              {t.criticalCard || "Critical"}
             </span>
             <div className="w-8 h-8 rounded-lg bg-red-50 border border-red-100 text-red-600 flex items-center justify-center">
               <Flame className="w-4 h-4" />
@@ -125,7 +125,7 @@ export const CommandAnalyticsBar = () => {
             {criticalCount}
           </p>
           <p className="text-[11px] text-red-700 mt-1.5 font-medium">
-            Immediate dispatch tier
+            {t.immediateDispatchTier || "Immediate dispatch tier"}
           </p>
         </div>
 
@@ -133,7 +133,7 @@ export const CommandAnalyticsBar = () => {
         <div className="bg-white border border-orange-200 rounded-xl p-4 shadow-sm hover:border-orange-300 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-orange-700">
-              High Priority
+              {t.highPriorityCard || "High Priority"}
             </span>
             <div className="w-8 h-8 rounded-lg bg-orange-50 border border-orange-100 text-orange-600 flex items-center justify-center">
               <ShieldAlert className="w-4 h-4" />
@@ -143,7 +143,7 @@ export const CommandAnalyticsBar = () => {
             {highPriorityCount}
           </p>
           <p className="text-[11px] text-slate-500 mt-1.5">
-            Priority response queue
+            {t.priorityResponseQueue || "Priority response queue"}
           </p>
         </div>
 
@@ -151,7 +151,7 @@ export const CommandAnalyticsBar = () => {
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:border-slate-300 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-              People Affected
+              {t.peopleAffectedCard || "People Affected"}
             </span>
             <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center">
               <Users className="w-4 h-4" />
@@ -161,7 +161,7 @@ export const CommandAnalyticsBar = () => {
             {totalPeopleAffected}
           </p>
           <p className="text-[11px] text-slate-500 mt-1.5">
-            Aggregated civilian victim count
+            {t.civilianVictimCount || "Aggregated civilian victim count"}
           </p>
         </div>
       </div>

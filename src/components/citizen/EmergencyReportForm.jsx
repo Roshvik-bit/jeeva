@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 
 export const EmergencyReportForm = ({ onSubmitted }) => {
-  const { isOnline, submitDistressReport, setActivePortal } = useEmergency();
+  const { isOnline, submitDistressReport, setActivePortal, t } = useEmergency();
 
   const [category, setCategory] = useState("flood");
   const [peopleCount, setPeopleCount] = useState(1);
@@ -46,12 +46,12 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
 
   // Exact categories: Flood, People Trapped, Medical Emergency, Blocked Road, Damaged Bridge, Fire
   const categories = [
-    { id: "flood", label: "Flood", icon: <Waves className="w-4 h-4 text-blue-600" /> },
-    { id: "trapped", label: "People Trapped", icon: <Users className="w-4 h-4 text-orange-600" /> },
-    { id: "medical", label: "Medical Emergency", icon: <HeartPulse className="w-4 h-4 text-red-600" /> },
-    { id: "blocked_road", label: "Blocked Road", icon: <AlertTriangle className="w-4 h-4 text-amber-600" /> },
-    { id: "bridge", label: "Damaged Bridge", icon: <Building2 className="w-4 h-4 text-slate-600" /> },
-    { id: "fire", label: "Fire", icon: <Flame className="w-4 h-4 text-red-500" /> }
+    { id: "flood", label: t.flood || "Flood", icon: <Waves className="w-4 h-4 text-blue-600" /> },
+    { id: "trapped", label: t.trapped || "People Trapped", icon: <Users className="w-4 h-4 text-orange-600" /> },
+    { id: "medical", label: t.medical || "Medical Emergency", icon: <HeartPulse className="w-4 h-4 text-red-600" /> },
+    { id: "blocked_road", label: t.blockedRoad || "Blocked Road", icon: <AlertTriangle className="w-4 h-4 text-amber-600" /> },
+    { id: "bridge", label: t.bridge || "Damaged Bridge", icon: <Building2 className="w-4 h-4 text-slate-600" /> },
+    { id: "fire", label: t.fire || "Fire", icon: <Flame className="w-4 h-4 text-red-500" /> }
   ];
 
   const handleResetForm = () => {
@@ -130,14 +130,14 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           </div>
 
           <h2 className="text-2xl font-bold text-slate-900">
-            Report Submitted
+            {t.reportSubmittedTitle || "Report Submitted Successfully"}
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 max-w-sm mt-1">
-            Emergency response teams have received your distress signal and priority triage has been assigned.
+            {t.reportSubmittedDesc || "Your emergency alert has been recorded and transmitted to the rescue command center."}
           </p>
 
           <div className="mt-3 px-3.5 py-1 rounded-md bg-slate-100 border border-slate-200 inline-flex items-center gap-2">
-            <span className="text-xs text-slate-600 font-medium">Incident ID:</span>
+            <span className="text-xs text-slate-600 font-medium">{t.incidentIdLabel || "Incident ID"}:</span>
             <span className="font-bold text-xs text-slate-900 font-mono">
               {submittedReceipt.incidentId}
             </span>
@@ -147,31 +147,31 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         {/* Structured Summary Rows */}
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-left divide-y divide-slate-200 space-y-2">
           <div className="flex items-center justify-between pb-2 text-xs">
-            <span className="text-slate-600 font-medium">Incident Type:</span>
+            <span className="text-slate-600 font-medium">{t.categorySummary || "Incident Type"}:</span>
             <span className="font-bold text-slate-900">{submittedReceipt.category}</span>
           </div>
 
           <div className="flex items-center justify-between py-2 text-xs">
-            <span className="text-slate-600 font-medium">People Affected:</span>
-            <span className="font-bold text-slate-900">{submittedReceipt.peopleCount} person(s)</span>
+            <span className="text-slate-600 font-medium">{t.peopleCountSummary || "People Affected"}:</span>
+            <span className="font-bold text-slate-900">{submittedReceipt.peopleCount}</span>
           </div>
 
           <div className="flex items-center justify-between py-2 text-xs">
-            <span className="text-slate-600 font-medium">Medical Emergency:</span>
+            <span className="text-slate-600 font-medium">{t.medicalCheckbox || "Medical Emergency"}:</span>
             <span className={`font-bold ${submittedReceipt.hasMedicalEmergency ? "text-red-600" : "text-slate-600"}`}>
               {submittedReceipt.hasMedicalEmergency ? "Yes — Assistance Flagged" : "None Reported"}
             </span>
           </div>
 
           <div className="flex items-start justify-between py-2 text-xs gap-3">
-            <span className="text-slate-600 font-medium shrink-0">Location:</span>
+            <span className="text-slate-600 font-medium shrink-0">{t.locationSummary || "Location"}:</span>
             <span className="font-semibold text-slate-800 text-right truncate max-w-[220px]">
               {submittedReceipt.address}
             </span>
           </div>
 
           <div className="flex items-center justify-between pt-2 text-xs">
-            <span className="text-slate-600 font-medium">Status:</span>
+            <span className="text-slate-600 font-medium">{t.statusLabel || "Status"}:</span>
             <span className="font-semibold text-green-700 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-green-600" />
               {submittedReceipt.isOffline ? "Saved Locally (Will auto-sync)" : "Sent to Rescue Dashboard"}
@@ -188,7 +188,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           >
             <span className="flex items-center justify-center gap-1.5">
               <RotateCcw className="w-3.5 h-3.5" />
-              Submit Another Report
+              {t.submitAnother || "Submit Another Report"}
             </span>
           </button>
 
@@ -198,7 +198,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
             className="py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs transition-colors shadow-xs"
           >
             <span className="flex items-center justify-center gap-1.5">
-              View on Rescue Map
+              {t.viewOnMap || "View on Rescue Map"}
               <ArrowRight className="w-3.5 h-3.5" />
             </span>
           </button>
@@ -212,7 +212,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
       {/* 1. Incident Type */}
       <div className="space-y-1.5">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-          Incident Type
+          {t.categoryLabel || "Incident Type"}
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {categories.map((cat) => (
@@ -236,7 +236,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
       {/* 2. Photo / Camera */}
       <div className="space-y-1.5">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-          Photo / Camera
+          {t.photoLabel || "Photo / Camera"}
         </label>
         <PhotoCaptureModal
           photoUrl={photoUrl}
@@ -251,7 +251,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
       {/* 3. Voice Report */}
       <div className="space-y-1.5">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-          Voice Report
+          {t.voiceLabel || "Voice Report"}
         </label>
         <VoiceRecorderModal
           voiceTranscript={voiceTranscript}
@@ -263,10 +263,10 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-            Text Description
+            {t.descriptionLabel || "Text Description"}
           </label>
           <span className="text-[11px] text-slate-500 font-mono">
-            {description.length} / 500 characters
+            {description.length} / 500 {t.charLimit || "characters"}
           </span>
         </div>
         <textarea
@@ -274,7 +274,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           maxLength={500}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe landmarks, water depth, building color, phone number or urgent needs..."
+          placeholder={t.descriptionPlaceholder || "Describe landmarks, water depth, building color, phone number or urgent needs..."}
           className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 leading-relaxed resize-none"
         />
       </div>
@@ -283,7 +283,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
       <div className="bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between gap-4">
         <div>
           <label className="text-xs font-bold text-slate-900 block">
-            People Affected
+            {t.peopleAffectedLabel || "People Affected"}
           </label>
           <p className="text-[11px] text-slate-500">Number of people stranded or needing help</p>
         </div>
@@ -320,7 +320,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           />
           <div className="text-xs">
             <span className="font-bold text-slate-900">
-              Medical Emergency Assistance Required
+              {t.medicalCheckbox || "Medical Emergency Assistance Required"}
             </span>
             <p className="text-[11px] text-slate-500 mt-0.5">
               Check this if someone is injured, unconscious, elderly, pregnant, or has chronic illness.
@@ -333,7 +333,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
             type="text"
             value={medicalDetails}
             onChange={(e) => setMedicalDetails(e.target.value)}
-            placeholder="E.g., elderly diabetic person, oxygen needed, severe bleeding..."
+            placeholder={t.medicalPlaceholder || "E.g., elderly diabetic person, oxygen needed, severe bleeding..."}
             className="w-full bg-slate-50 border border-red-300 rounded-md p-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-red-600 focus:bg-white"
           />
         )}
@@ -342,7 +342,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
       {/* 7. Current Location */}
       <div className="space-y-1.5">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-          Current Location
+          {t.locationLabel || "Current Location"}
         </label>
         <LocationPicker location={location} setLocation={setLocation} />
       </div>
@@ -360,12 +360,12 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         {!isOnline ? (
           <>
             <Save className="w-4 h-4" />
-            <span>{isSubmitting ? "Saving Report..." : "Save Report Offline"}</span>
+            <span>{isSubmitting ? (t.submitting || "Saving Report...") : (t.submitReport || "Save Report Offline")}</span>
           </>
         ) : (
           <>
             <Send className="w-4 h-4" />
-            <span>{isSubmitting ? "Submitting Report..." : "Submit Report"}</span>
+            <span>{isSubmitting ? (t.submitting || "Submitting Report...") : (t.submitReport || "Submit Report")}</span>
           </>
         )}
       </button>

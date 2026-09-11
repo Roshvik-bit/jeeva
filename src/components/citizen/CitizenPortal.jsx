@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 export const CitizenPortal = () => {
-  const { myReports } = useEmergency();
+  const { myReports, t } = useEmergency();
   const [activeTab, setActiveTab] = useState("form"); // default to "form" as requested
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -35,7 +35,7 @@ export const CitizenPortal = () => {
           }`}
         >
           <FileText className="w-4 h-4" />
-          <span>Report an Emergency</span>
+          <span>{t.reportAnEmergency || "Report an Emergency"}</span>
         </button>
 
         <button
@@ -47,7 +47,7 @@ export const CitizenPortal = () => {
           }`}
         >
           <span className="w-2 h-2 rounded-full bg-red-400" />
-          <span>Quick SOS Beacon</span>
+          <span>{t.quickSosBeacon || "Quick SOS Beacon"}</span>
         </button>
       </div>
 
@@ -57,10 +57,10 @@ export const CitizenPortal = () => {
           <div className="space-y-4">
             <div className="border-b border-slate-100 pb-3">
               <h2 className="text-lg font-bold text-slate-900">
-                Report an Emergency
+                {t.reportAnEmergency || "Report an Emergency"}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Fill in the details below to dispatch immediate rescue assistance to your location.
+                {t.reportAnEmergencyDesc || "Fill in the details below to dispatch immediate rescue assistance to your location."}
               </p>
             </div>
 
@@ -73,10 +73,10 @@ export const CitizenPortal = () => {
                 Immediate Assistance
               </span>
               <h2 className="text-xl font-bold text-slate-900 mt-1">
-                One-Touch Emergency SOS
+                {t.oneTouchSos || "One-Touch Emergency SOS"}
               </h2>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Press and hold to immediately broadcast your GPS coordinates to rescue teams.
+                {t.oneTouchSosDesc || "Press and hold to immediately broadcast your GPS coordinates to rescue teams."}
               </p>
             </div>
 
@@ -114,9 +114,9 @@ export const CitizenPortal = () => {
             <FileText className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-bold text-slate-900 truncate">My Reports</p>
+            <p className="text-xs font-bold text-slate-900 truncate">{t.myReports || "My Reports"}</p>
             <p className="text-[11px] text-slate-500 truncate">
-              {myReports.length} submitted report(s)
+              {myReports.length} {t.submittedReportsCount || "submitted report(s)"}
             </p>
           </div>
         </button>
@@ -129,8 +129,8 @@ export const CitizenPortal = () => {
             <BookOpen className="w-4 h-4" />
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-bold text-slate-900 truncate">Survival Guide</p>
-            <p className="text-[11px] text-slate-500 truncate">Offline disaster tips</p>
+            <p className="text-xs font-bold text-slate-900 truncate">{t.survivalGuide || "Survival Guide"}</p>
+            <p className="text-[11px] text-slate-500 truncate">{t.survivalGuideDesc || "Offline disaster tips"}</p>
           </div>
         </button>
       </div>

@@ -446,7 +446,7 @@ export const EmergencyProvider = ({ children }) => {
   );
 
   // Translation helper
-  const t = translations[language] || translations.en;
+  const t = { ...translations.en, ...(translations[language] || {}) };
 
   return (
     <EmergencyContext.Provider

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useEmergency } from "../../context/EmergencyContext";
 import { speechService } from "../../services/speechRecognition";
 import { Mic, MicOff, Volume2, Sparkles, RefreshCw, Check } from "lucide-react";
 
 export const VoiceRecorderModal = ({ voiceTranscript, setVoiceTranscript }) => {
+  const { t } = useEmergency();
   const [isRecording, setIsRecording] = useState(false);
   const [waveformLevels, setWaveformLevels] = useState([12, 24, 40, 20, 32, 16, 28, 45, 22, 14]);
   const recognitionRef = useRef(null);
@@ -78,7 +80,7 @@ export const VoiceRecorderModal = ({ voiceTranscript, setVoiceTranscript }) => {
       <div className="flex items-center justify-between">
         <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
           <Mic className="w-4 h-4 text-blue-600" />
-          <span>Voice Distress Note (Voice-to-Text)</span>
+          <span>{t.voiceLabel || "Voice Distress Note (Voice-to-Text)"}</span>
         </label>
         <button
           type="button"
@@ -87,7 +89,7 @@ export const VoiceRecorderModal = ({ voiceTranscript, setVoiceTranscript }) => {
           className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1 font-medium"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span>Simulate Voice</span>
+          <span>{t.simulateVoice || "Simulate Voice"}</span>
         </button>
       </div>
 
@@ -120,12 +122,12 @@ export const VoiceRecorderModal = ({ voiceTranscript, setVoiceTranscript }) => {
             {isRecording ? (
               <>
                 <MicOff className="w-4 h-4 text-white" />
-                <span>Stop Listening...</span>
+                <span>{t.stopListening || "Stop Listening..."}</span>
               </>
             ) : (
               <>
                 <Mic className="w-4 h-4 text-blue-600" />
-                <span>Tap to Record Audio</span>
+                <span>{t.tapRecordAudio || "Tap to Record Audio"}</span>
               </>
             )}
           </button>
@@ -138,7 +140,7 @@ export const VoiceRecorderModal = ({ voiceTranscript, setVoiceTranscript }) => {
           <div className="flex items-center justify-between text-[11px] text-slate-500">
             <span className="font-semibold text-slate-700 flex items-center gap-1">
               <Check className="w-3.5 h-3.5 text-green-600" />
-              Transcribed Voice Text:
+              {t.transcribedText || "Transcribed Voice Text"}:
             </span>
             <button
               type="button"

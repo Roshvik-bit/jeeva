@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 export const LandingHero = () => {
-  const { setActivePortal, incidents } = useEmergency();
+  const { setActivePortal, incidents, t } = useEmergency();
 
   const activeIncidents = incidents.filter((i) => i.status !== "Resolved").length;
   const totalCivilians = incidents
@@ -22,25 +22,25 @@ export const LandingHero = () => {
       {/* Main Heading & Subtitle */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-          Jeeva
+          {t.heroTitle || "Jeeva"}
           <span className="block text-xl sm:text-2xl font-bold text-blue-700 mt-1">
-            Disaster Response &amp; Rescue Platform
+            {t.tagline || "Disaster Response & Rescue Platform"}
           </span>
         </h1>
 
         <p className="text-sm sm:text-base text-slate-600 leading-relaxed pt-1">
-          Report emergencies quickly and help rescue teams understand which incidents need attention first.
+          {t.heroSubtitle || "Report emergencies quickly and help rescue teams understand which incidents need attention first."}
         </p>
 
         {/* Practical Status Strip */}
         <div className="flex flex-wrap items-center justify-center gap-3 pt-3 text-xs text-slate-600">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm font-medium">
             <span className="w-2 h-2 rounded-full bg-green-600" />
-            <span>{activeIncidents} Active Incidents</span>
+            <span>{activeIncidents} {t.activeIncidentsCount || "Active Incidents"}</span>
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white border border-slate-200 shadow-sm font-medium">
             <Users className="w-3.5 h-3.5 text-slate-500" />
-            <span>{totalCivilians} People Affected</span>
+            <span>{totalCivilians} {t.peopleAffectedCount || "People Affected"}</span>
           </span>
         </div>
       </div>
@@ -52,7 +52,7 @@ export const LandingHero = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
-                Citizen App
+                {t.switchToCitizen || "Citizen App"}
               </span>
               <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
                 <Radio className="w-5 h-5" />
@@ -60,25 +60,25 @@ export const LandingHero = () => {
             </div>
 
             <h2 className="text-xl font-bold text-slate-900">
-              Report an Emergency
+              {t.reportEmergencyCardTitle || "Report an Emergency"}
             </h2>
 
             <p className="text-sm text-slate-600 leading-relaxed">
-              Submit an emergency report using photo, voice or text and share your location.
+              {t.reportEmergencyCardDesc || "Submit an emergency report using photo, voice or text and share your location."}
             </p>
 
             <ul className="space-y-2 text-xs text-slate-500 pt-2">
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-                <span>Works offline and syncs automatically when reconnected</span>
+                <span>{t.featureOffline || "Works offline and syncs automatically when reconnected"}</span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-                <span>One-touch SOS beacon with GPS coordinates</span>
+                <span>{t.featureSos || "One-touch SOS beacon with GPS coordinates"}</span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
-                <span>Voice description and image upload support</span>
+                <span>{t.featureVoicePhoto || "Voice description and image upload support"}</span>
               </li>
             </ul>
           </div>
@@ -88,7 +88,7 @@ export const LandingHero = () => {
               onClick={() => setActivePortal("citizen")}
               className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-sm"
             >
-              <span>Open Citizen App</span>
+              <span>{t.openCitizenApp || "Open Citizen App"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -99,7 +99,7 @@ export const LandingHero = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-teal-800 bg-teal-50 px-2.5 py-1 rounded-md border border-teal-100">
-                Rescue Dashboard
+                {t.switchToDashboard || "Rescue Dashboard"}
               </span>
               <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
                 <LayoutDashboard className="w-5 h-5" />
@@ -107,25 +107,25 @@ export const LandingHero = () => {
             </div>
 
             <h2 className="text-xl font-bold text-slate-900">
-              Monitor Emergencies
+              {t.monitorEmergenciesCardTitle || "Monitor Emergencies"}
             </h2>
 
             <p className="text-sm text-slate-600 leading-relaxed">
-              View reported incidents, affected people, priority levels and locations in one place.
+              {t.monitorEmergenciesCardDesc || "View reported incidents, affected people, priority levels and locations in one place."}
             </p>
 
             <ul className="space-y-2 text-xs text-slate-500 pt-2">
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
-                <span>Live map view with priority-ranked markers</span>
+                <span>{t.featureMap || "Live map view with priority-ranked markers"}</span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
-                <span>Automated priority scoring and route accessibility status</span>
+                <span>{t.featureScore || "Automated priority scoring and route accessibility status"}</span>
               </li>
               <li className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0" />
-                <span>Dispatch rescue boats, ambulances, and response teams</span>
+                <span>{t.featureDispatch || "Dispatch rescue boats, ambulances, and response teams"}</span>
               </li>
             </ul>
           </div>
@@ -135,7 +135,7 @@ export const LandingHero = () => {
               onClick={() => setActivePortal("dashboard")}
               className="w-full py-2.5 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors shadow-sm"
             >
-              <span>Open Rescue Dashboard</span>
+              <span>{t.openRescueDashboard || "Open Rescue Dashboard"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -145,7 +145,7 @@ export const LandingHero = () => {
       {/* Simple Emergency Contact Row */}
       <div className="max-w-2xl mx-auto pt-6 border-t border-slate-200 flex flex-wrap items-center justify-around gap-4 text-xs text-slate-500">
         <div className="flex items-center gap-1.5">
-          <span>National Emergency SOS:</span>
+          <span>{t.emergencyHelpline || "National Emergency SOS"}:</span>
           <strong className="text-slate-900 font-bold">112</strong>
         </div>
         <div className="flex items-center gap-1.5">

@@ -3,7 +3,7 @@ import { useEmergency } from "../../context/EmergencyContext";
 import { WifiOff, RefreshCw, ChevronDown, ChevronUp, Database, CheckCircle } from "lucide-react";
 
 export const OfflineSyncBanner = () => {
-  const { isOnline, offlineOutbox, syncOfflineReports, toggleOnlineStatus } = useEmergency();
+  const { isOnline, offlineOutbox, syncOfflineReports, toggleOnlineStatus, t } = useEmergency();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -37,7 +37,7 @@ export const OfflineSyncBanner = () => {
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs sm:text-sm font-bold text-amber-950">
                 {!isOnline
-                  ? "Offline — Report will be saved and synced when connection returns."
+                  ? (t.offlineNotice || "Offline — Report will be saved and synced when connection returns.")
                   : "Connection Restored — Syncing reports..."}
               </span>
               {offlineOutbox.length > 0 && (

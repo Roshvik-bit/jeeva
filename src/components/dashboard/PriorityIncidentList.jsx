@@ -19,7 +19,7 @@ export const PriorityIncidentList = ({
   onOpenDispatch,
   selectedIncidentId
 }) => {
-  const { updateIncidentStatus, rescueUnits } = useEmergency();
+  const { updateIncidentStatus, rescueUnits, t } = useEmergency();
 
   if (incidents.length === 0) {
     return (
@@ -82,7 +82,7 @@ export const PriorityIncidentList = ({
                       : "bg-amber-50 text-amber-700 border-amber-200"
                   }`}
                 >
-                  {isResolved ? "Resolved" : incident.severity}
+                  {isResolved ? (t.statusResolved || "Resolved") : incident.severity}
                 </span>
 
                 {(incident.corroboratingReportsCount || 1) > 1 && (
@@ -98,18 +98,18 @@ export const PriorityIncidentList = ({
             <div className="mt-3 space-y-1 text-xs text-slate-600">
               <div className="flex items-center gap-1.5 font-medium text-slate-800">
                 <Users className="w-3.5 h-3.5 text-slate-500" />
-                <span>{incident.peopleCount} people affected</span>
+                <span>{incident.peopleCount} {t.peopleAffectedLabel || "people affected"}</span>
               </div>
 
               {incident.hasMedicalEmergency && (
                 <div className="flex items-center gap-1.5 font-semibold text-red-600">
                   <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                  <span>Medical assistance required</span>
+                  <span>{t.medicalAssistanceRequired || "Medical assistance required"}</span>
                 </div>
               )}
 
               <div className="flex items-center gap-1.5 text-slate-600">
-                <span className="text-slate-400 font-medium">Route:</span>
+                <span className="text-slate-400 font-medium">{t.route || "Route"}:</span>
                 <span className={`font-semibold ${
                   routeStatus.includes("blocked") || routeStatus.includes("Restricted")
                     ? "text-orange-700"
@@ -123,7 +123,7 @@ export const PriorityIncidentList = ({
             {/* Priority Score Display */}
             <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
               <div className="text-xs font-semibold text-slate-700">
-                <span>Priority Score: </span>
+                <span>{t.priorityScore || "Priority Score"}: </span>
                 <span className={`font-mono font-bold text-sm ${
                   incident.priorityScore >= 85
                     ? "text-red-600"
@@ -145,7 +145,7 @@ export const PriorityIncidentList = ({
                   }}
                   className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-sm"
                 >
-                  View Incident
+                  {t.viewIncident || "View Incident"}
                 </button>
 
                 <button
@@ -156,7 +156,7 @@ export const PriorityIncidentList = ({
                   }}
                   className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium border border-slate-200 transition-colors"
                 >
-                  {incident.assignedUnit ? "Re-assign" : "Dispatch"}
+                  {incident.assignedUnit ? (t.reassign || "Re-assign") : (t.dispatch || "Dispatch")}
                 </button>
 
                 {incident.status !== "Resolved" ? (
@@ -167,7 +167,7 @@ export const PriorityIncidentList = ({
                       updateIncidentStatus(incident.id, "Resolved");
                     }}
                     className="p-1 text-slate-400 hover:text-green-600 rounded transition-colors"
-                    title="Mark Resolved"
+                    title={t.resolve || "Mark Resolved"}
                   >
                     <CheckCircle className="w-4 h-4" />
                   </button>
@@ -180,7 +180,7 @@ export const PriorityIncidentList = ({
                     }}
                     className="text-[10px] text-slate-500 hover:text-slate-700 font-medium underline"
                   >
-                    Reopen
+                    {t.reopen || "Reopen"}
                   </button>
                 )}
               </div>

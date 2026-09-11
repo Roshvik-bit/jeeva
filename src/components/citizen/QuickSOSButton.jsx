@@ -85,10 +85,10 @@ export const QuickSOSButton = () => {
           </div>
 
           <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-            Sending Emergency Alert
+            {t.sendingAlert || "Sending Emergency Alert"}
           </h3>
           <p className="text-xs text-slate-600 mt-1 mb-4">
-            {t.sosCancelWarning}
+            {t.sosCancelWarning || "Sending Emergency Alert! Tap Cancel within 3 seconds if accidental"}
           </p>
 
           {/* Countdown Progress Bar */}
@@ -104,7 +104,7 @@ export const QuickSOSButton = () => {
             className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-98 shadow-sm"
           >
             <X className="w-4 h-4 text-red-600" />
-            <span>{t.cancel} (Accidental Press)</span>
+            <span>{t.cancel || "Cancel"}</span>
           </button>
         </div>
       ) : isSuccess ? (
@@ -114,10 +114,10 @@ export const QuickSOSButton = () => {
             <Check className="w-8 h-8 stroke-[3]" />
           </div>
           <h3 className="text-lg font-bold text-slate-900">
-            {t.sosSent}
+            {t.sosSent || "Emergency Alert Sent! Coordinates Tagged."}
           </h3>
           <p className="text-xs text-slate-600 mt-1">
-            Rescue response teams notified. Keep phone on high volume.
+            {t.teamsNotifiedDesc || "Rescue response teams notified. Keep phone on high volume."}
           </p>
         </div>
       ) : (
@@ -134,16 +134,16 @@ export const QuickSOSButton = () => {
             <div className="flex flex-col items-center text-center px-4">
               <AlertOctagon className="w-12 h-12 sm:w-14 sm:h-14 mb-2 stroke-[2.5] group-hover:scale-110 transition-transform" />
               <span className="text-2xl sm:text-3xl font-black tracking-wider uppercase font-mono">
-                SOS
+                {t.sosButton || "SOS"}
               </span>
               <span className="text-[10px] sm:text-xs font-semibold text-red-100 mt-1 uppercase tracking-wider">
-                Emergency Alert
+                {t.oneTouchSos || "Emergency Alert"}
               </span>
             </div>
           </button>
 
           <p className="text-xs text-slate-500 mt-4 text-center max-w-xs leading-relaxed">
-            {t.sosSubtitle} • Captures GPS & notifies rescue control
+            {t.sosSubtitle || "Captures GPS & notifies rescue control"}
           </p>
         </div>
       )}

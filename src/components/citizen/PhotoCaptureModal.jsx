@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { useEmergency } from "../../context/EmergencyContext";
 import { SAMPLE_DISASTER_IMAGES, mockAiClassifier } from "../../services/mockAiClassifier";
 import { Camera, Image as ImageIcon, Sparkles, AlertTriangle, Check, RefreshCw, X } from "lucide-react";
 
 export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, setAiClassification, category, hasMedical }) => {
+  const { t } = useEmergency();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -53,7 +55,7 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
       <div className="flex items-center justify-between">
         <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
           <Camera className="w-4 h-4 text-blue-600" />
-          <span>Incident Photo & AI Analysis</span>
+          <span>{t.photoLabel || "Incident Photo & AI Analysis"}</span>
         </label>
         {photoUrl && (
           <button
@@ -73,7 +75,7 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
             {/* File Upload / Camera Trigger */}
             <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border border-dashed border-slate-300 hover:border-blue-500 bg-slate-50 hover:bg-blue-50/50 cursor-pointer text-xs font-medium text-slate-700 transition-colors">
               <Camera className="w-4 h-4 text-blue-600" />
-              <span>Take Photo / Upload</span>
+              <span>{t.takePhoto || "Take Photo / Upload"}</span>
               <input
                 type="file"
                 accept="image/*"
@@ -90,7 +92,7 @@ export const PhotoCaptureModal = ({ photoUrl, setPhotoUrl, aiClassification, set
               className="flex items-center justify-center gap-2 p-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-xs font-semibold text-slate-700 transition-colors"
             >
               <ImageIcon className="w-4 h-4 text-teal-600" />
-              <span>Pick Test Scenario</span>
+              <span>{t.pickScenario || "Pick Test Scenario"}</span>
             </button>
           </div>
 

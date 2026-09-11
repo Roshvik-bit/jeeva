@@ -34,7 +34,7 @@ const AppContent = () => {
           }`}
         >
           <Home className="w-5 h-5" />
-          <span>Home</span>
+          <span>{t.home || "Home"}</span>
         </button>
 
         <button
@@ -44,7 +44,7 @@ const AppContent = () => {
           }`}
         >
           <Radio className="w-5 h-5" />
-          <span>Citizen App</span>
+          <span>{t.switchToCitizen || "Citizen App"}</span>
         </button>
 
         <button
@@ -54,7 +54,7 @@ const AppContent = () => {
           }`}
         >
           <LayoutDashboard className="w-5 h-5" />
-          <span>Rescue Dashboard</span>
+          <span>{t.switchToDashboard || "Rescue Dashboard"}</span>
         </button>
       </nav>
 
@@ -63,8 +63,8 @@ const AppContent = () => {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-slate-700">
             <ShieldAlert className="w-4 h-4 text-blue-600" />
-            <span className="font-bold text-slate-900">JEEVA</span>
-            <span>• Disaster Response & Rescue Platform</span>
+            <span className="font-bold text-slate-900">{t.appName || "JEEVA"}</span>
+            <span>• {t.tagline || "Disaster Response & Rescue Platform"}</span>
           </div>
 
           <div className="flex items-center gap-4 text-slate-600 text-xs">
@@ -72,19 +72,19 @@ const AppContent = () => {
               onClick={() => setActivePortal("landing")}
               className="hover:text-blue-600 transition-colors"
             >
-              Home
+              {t.home || "Home"}
             </button>
             <button
               onClick={() => setActivePortal("citizen")}
               className="hover:text-blue-600 transition-colors"
             >
-              Citizen App
+              {t.switchToCitizen || "Citizen App"}
             </button>
             <button
               onClick={() => setActivePortal("dashboard")}
               className="hover:text-blue-600 transition-colors"
             >
-              Rescue Dashboard
+              {t.switchToDashboard || "Rescue Dashboard"}
             </button>
           </div>
 
