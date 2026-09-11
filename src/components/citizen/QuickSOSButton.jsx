@@ -3,7 +3,7 @@ import { useEmergency } from "../../context/EmergencyContext";
 import { AlertOctagon, X, Check, Radio } from "lucide-react";
 
 export const QuickSOSButton = () => {
-  const { t, triggerQuickSOS, playEmergencyAudio } = useEmergency();
+  const { t, triggerQuickSOS, playEmergencyAudio, stopEmergencyAudio } = useEmergency();
   const [countdown, setCountdown] = useState(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -23,12 +23,19 @@ export const QuickSOSButton = () => {
 
   const handleStartSOS = () => {
     playEmergencyAudio("beep");
+    // Pre-buffer audio on direct user touch/click gesture so playback is instantaneous
+    try {
+      const primer = new Audio("/sounds/sos-alarm.mp3");
+      primer.preload = "auto";
+      primer.load();
+    } catch (_) {}
     setCountdown(3);
   };
 
   const handleCancel = (e) => {
     e.stopPropagation();
     setCountdown(null);
+    if (stopEmergencyAudio) stopEmergencyAudio();
   };
 
   const handleExecuteSOS = async () => {
