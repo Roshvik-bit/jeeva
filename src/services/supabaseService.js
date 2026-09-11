@@ -111,70 +111,177 @@ export const mapIncidentToRow = (incident) => {
   };
 };
 
-export const supabaseService = {
-  isConfigured: () => isSupabaseConfigured,
+/**
+ * Upload an audio recording to Supabase Storage bucket ('incident-media' or 'audio-reports')
+ * Appends Date.now() to ensure a unique filename and returns ONLY the lightweight public URL string.
+ * This guarantees no raw base64 or heavy binary is ever sent in database insert payloads, preventing 413 errors.
+ */
+export const uploadAudioFile = async (audioSource, incidentId = "incident") => {
+  if (!isSupabaseConfigured || !supabase || !audioSource) return null;
 
-  /**
-   * Upload media (photo or audio) to Supabase Storage bucket 'incident-media'
-   * Returns public HTTPS URL (length ~100 chars, well under 1024 char limit)
-   */
-  uploadMedia: async (mediaData, incidentId, type = "photo") => {
-    if (!isSupabaseConfigured || !supabase || !mediaData) return null;
+  // If already a public https URL, return as-is
+  if (
+    typeof audioSource === "string" &&
+    (audioSource.startsWith("http://") || audioSource.startsWith("https://")) &&
+    audioSource.length <= 1024
+  ) {
+    return audioSource;
+  }
 
-    // If already a public https URL, return as-is
-    if (typeof mediaData === "string" && (mediaData.startsWith("http://") || mediaData.startsWith("https://"))) {
-      return mediaData;
+  try {
+    const cleanId = String(incidentId).replace(/[^a-zA-Z0-9_-]/g, "") || "voice";
+    // Append timestamp (Date.now()) to guarantee unique filename and prevent upload conflicts
+    const fileName = `audios/audio_${cleanId}_${Date.now()}.webm`;
+    const mimeType = "audio/webm";
+
+    let blobToUpload = null;
+    if (typeof Blob !== "undefined" && audioSource instanceof Blob) {
+      blobToUpload = audioSource;
+    } else if (typeof audioSource === "string") {
+      if (audioSource.startsWith("blob:") && typeof window !== "undefined") {
+        try {
+          const res = await fetch(audioSource);
+          if (res.ok) {
+            blobToUpload = await res.blob();
+          }
+        } catch (e) {
+          console.warn("Could not fetch blob URL:", e);
+        }
+      }
+      if (!blobToUpload) {
+        blobToUpload = dataUrlToBlob(audioSource, mimeType);
+      }
     }
 
-    try {
-      const isPhoto = type === "photo";
-      const ext = isPhoto ? "jpg" : "webm";
-      const mimeType = isPhoto ? "image/jpeg" : "audio/webm";
-      const fileName = `${type}s/${incidentId}_${Date.now()}.${ext}`;
+    if (!blobToUpload) {
+      console.warn("uploadAudioFile: Failed to generate audio Blob from input");
+      return null;
+    }
 
-      let blobToUpload = null;
-      if (typeof mediaData === "string") {
-        if (mediaData.startsWith("blob:") && typeof window !== "undefined") {
-          try {
-            const res = await fetch(mediaData);
-            if (res.ok) {
-              blobToUpload = await res.blob();
-            }
-          } catch (e) {
-            console.warn("Could not fetch blob URL:", e);
-          }
-        } else {
-          blobToUpload = dataUrlToBlob(mediaData, mimeType);
-        }
-      } else if (typeof Blob !== "undefined" && mediaData instanceof Blob) {
-        blobToUpload = mediaData;
-      }
-
-      if (blobToUpload) {
+    // Try primary bucket 'incident-media', fallback to 'audio-reports'
+    const bucketsToTry = ["incident-media", "audio-reports"];
+    for (const bucket of bucketsToTry) {
+      try {
         const { data, error } = await supabase.storage
-          .from("incident-media")
+          .from(bucket)
           .upload(fileName, blobToUpload, {
             contentType: mimeType,
+            cacheControl: "3600",
             upsert: true
           });
 
-        if (!error && data?.path) {
+        if (!error && (data?.path || data?.Key || fileName)) {
+          const storedPath = data?.path || fileName;
           const { data: publicUrlData } = supabase.storage
-            .from("incident-media")
-            .getPublicUrl(data.path);
+            .from(bucket)
+            .getPublicUrl(storedPath);
+
           if (publicUrlData?.publicUrl) {
             return publicUrlData.publicUrl;
           }
         } else if (error) {
-          console.warn("Supabase storage upload notice:", error.message);
+          console.warn(`Supabase Storage upload to '${bucket}' error:`, error.message);
+        }
+      } catch (uploadErr) {
+        console.warn(`Storage exception for bucket '${bucket}':`, uploadErr);
+      }
+    }
+  } catch (err) {
+    console.error("uploadAudioFile exception:", err);
+  }
+
+  // Never return raw base64 or blob strings to prevent 413 database payload errors
+  return null;
+};
+
+/**
+ * Upload a captured photo to Supabase Storage bucket 'incident-media'
+ * Appends Date.now() to ensure a unique filename and returns ONLY the lightweight public URL string.
+ */
+export const uploadPhotoFile = async (photoSource, incidentId = "incident") => {
+  if (!isSupabaseConfigured || !supabase || !photoSource) return null;
+
+  if (
+    typeof photoSource === "string" &&
+    (photoSource.startsWith("http://") || photoSource.startsWith("https://")) &&
+    photoSource.length <= 1024
+  ) {
+    return photoSource;
+  }
+
+  try {
+    const cleanId = String(incidentId).replace(/[^a-zA-Z0-9_-]/g, "") || "photo";
+    const fileName = `photos/photo_${cleanId}_${Date.now()}.jpg`;
+    const mimeType = "image/jpeg";
+
+    let blobToUpload = null;
+    if (typeof Blob !== "undefined" && photoSource instanceof Blob) {
+      blobToUpload = photoSource;
+    } else if (typeof photoSource === "string") {
+      if (photoSource.startsWith("blob:") && typeof window !== "undefined") {
+        try {
+          const res = await fetch(photoSource);
+          if (res.ok) {
+            blobToUpload = await res.blob();
+          }
+        } catch (e) {
+          console.warn("Could not fetch blob URL:", e);
         }
       }
-    } catch (storageErr) {
-      console.warn("Storage upload exception:", storageErr);
+      if (!blobToUpload) {
+        blobToUpload = dataUrlToBlob(photoSource, mimeType);
+      }
     }
 
-    // Never return raw base64 string to avoid database column bloat / 413 errors
-    return null;
+    if (!blobToUpload) return null;
+
+    const { data, error } = await supabase.storage
+      .from("incident-media")
+      .upload(fileName, blobToUpload, {
+        contentType: mimeType,
+        cacheControl: "3600",
+        upsert: true
+      });
+
+    if (!error && (data?.path || fileName)) {
+      const storedPath = data?.path || fileName;
+      const { data: publicUrlData } = supabase.storage
+        .from("incident-media")
+        .getPublicUrl(storedPath);
+
+      if (publicUrlData?.publicUrl) {
+        return publicUrlData.publicUrl;
+      }
+    } else if (error) {
+      console.warn("Supabase Storage photo upload notice:", error.message);
+    }
+  } catch (err) {
+    console.error("uploadPhotoFile exception:", err);
+  }
+
+  return null;
+};
+
+export const supabaseService = {
+  isConfigured: () => isSupabaseConfigured,
+
+  /**
+   * Dedicated upload helper for audio files to Supabase Storage
+   */
+  uploadAudioFile: uploadAudioFile,
+
+  /**
+   * Dedicated upload helper for photos to Supabase Storage
+   */
+  uploadPhotoFile: uploadPhotoFile,
+
+  /**
+   * Generic upload media router (delegates to uploadAudioFile or uploadPhotoFile)
+   */
+  uploadMedia: async (mediaData, incidentId, type = "photo") => {
+    return type === "audio"
+      ? uploadAudioFile(mediaData, incidentId)
+      : uploadPhotoFile(mediaData, incidentId);
   },
 
   /**
@@ -248,22 +355,22 @@ export const supabaseService = {
   },
 
   /**
-   * Insert a new incident into Supabase, uploading photos and audio
+   * Insert a new incident into Supabase, uploading photos and audio to storage first
    */
   insertIncident: async (incident) => {
     if (!isSupabaseConfigured || !supabase) return null;
     try {
       let photoUrl = incident.photoUrl;
-      let audioUrl = incident.audioBase64 || incident.audioUrl;
+      let audioUrl = incident.audioBlob || incident.audioUrl || incident.audioBase64;
 
       // 1. Upload photo to Supabase Storage bucket 'incident-media'
       if (photoUrl && !photoUrl.startsWith("http://") && !photoUrl.startsWith("https://")) {
-        photoUrl = await supabaseService.uploadMedia(photoUrl, incident.id, "photo");
+        photoUrl = await uploadPhotoFile(photoUrl, incident.id);
       }
 
-      // 2. Upload audio to Supabase Storage bucket 'incident-media'
+      // 2. Upload audio to Supabase Storage bucket 'incident-media' / 'audio-reports'
       if (audioUrl && !audioUrl.startsWith("http://") && !audioUrl.startsWith("https://")) {
-        audioUrl = await supabaseService.uploadMedia(audioUrl, incident.id, "audio");
+        audioUrl = await uploadAudioFile(audioUrl, incident.id);
       }
 
       const row = mapIncidentToRow({
@@ -299,12 +406,27 @@ export const supabaseService = {
       if (updates.status !== undefined) payload.status = updates.status;
       if (updates.assignedUnit !== undefined) payload.assigned_unit = updates.assignedUnit;
       if (updates.priorityScore !== undefined) payload.priority_score = updates.priorityScore;
-      if (updates.photoUrl !== undefined && typeof updates.photoUrl === "string" && updates.photoUrl.startsWith("http") && updates.photoUrl.length <= 1024) {
-        payload.photo_url = updates.photoUrl;
+
+      if (updates.photoUrl !== undefined) {
+        let photo = updates.photoUrl;
+        if (photo && !photo.startsWith("http://") && !photo.startsWith("https://")) {
+          photo = await uploadPhotoFile(photo, id);
+        }
+        if (photo && typeof photo === "string" && photo.startsWith("http") && photo.length <= 1024) {
+          payload.photo_url = photo;
+        }
       }
-      if (updates.audioUrl !== undefined && typeof updates.audioUrl === "string" && updates.audioUrl.startsWith("http") && updates.audioUrl.length <= 1024) {
-        payload.audio_url = updates.audioUrl;
+
+      if (updates.audioUrl !== undefined || updates.audioBlob !== undefined || updates.audioBase64 !== undefined) {
+        let audio = updates.audioBlob || updates.audioUrl || updates.audioBase64;
+        if (audio && !audio.startsWith("http://") && !audio.startsWith("https://")) {
+          audio = await uploadAudioFile(audio, id);
+        }
+        if (audio && typeof audio === "string" && audio.startsWith("http") && audio.length <= 1024) {
+          payload.audio_url = audio;
+        }
       }
+
       if (updates.peopleCount !== undefined) payload.people_count = updates.peopleCount;
       if (updates.corroboratingReportsCount !== undefined) payload.corroborating_reports_count = updates.corroboratingReportsCount;
 

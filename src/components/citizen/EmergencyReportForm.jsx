@@ -37,6 +37,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
   const [voiceTranscript, setVoiceTranscript] = useState("");
   const [voiceAudioUrl, setVoiceAudioUrl] = useState(null);
   const [voiceAudioBase64, setVoiceAudioBase64] = useState(null);
+  const [voiceAudioBlob, setVoiceAudioBlob] = useState(null);
   const [location, setLocation] = useState({
     lat: 13.0827,
     lng: 80.2707,
@@ -64,6 +65,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
     setVoiceTranscript("");
     setVoiceAudioUrl(null);
     setVoiceAudioBase64(null);
+    setVoiceAudioBlob(null);
     setPhotoUrl(null);
     setAiClassification(null);
     setHasMedicalEmergency(false);
@@ -108,7 +110,8 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         aiClassification,
         voiceTranscript,
         audioUrl: voiceAudioUrl,
-        audioBase64: voiceAudioBase64
+        audioBase64: voiceAudioBase64,
+        audioBlob: voiceAudioBlob
       });
 
       const rawId = result?.incidentId || result?.report?.localId || `JEEVA-2026-${Math.floor(100 + Math.random() * 900)}`;
@@ -132,7 +135,8 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         lng: location.lng,
         photoUrl: safePhoto,
         audioUrl: voiceAudioUrl,
-        audioBase64: voiceAudioBase64,
+        audioBase64: null,
+        audioBlob: voiceAudioBlob,
         voiceTranscript,
         isOffline: !isOnline,
         isFalseAlarm: Boolean(aiClassification?.isFalseAlarm),
@@ -371,6 +375,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
           setAudioUrl={setVoiceAudioUrl}
           audioBase64={voiceAudioBase64}
           setAudioBase64={setVoiceAudioBase64}
+          setAudioBlob={setVoiceAudioBlob}
           category={category}
         />
       </div>

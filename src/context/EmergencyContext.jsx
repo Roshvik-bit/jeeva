@@ -190,9 +190,31 @@ export const EmergencyProvider = ({ children }) => {
         );
       }
 
+      // Upload offline media to Supabase Storage first so database row contains only public URLs
+      let syncedPhotoUrl = report.photoUrl;
+      if (supabaseService.isConfigured() && syncedPhotoUrl && !syncedPhotoUrl.startsWith("http")) {
+        try {
+          syncedPhotoUrl = await supabaseService.uploadPhotoFile(syncedPhotoUrl, report.localId || "offline");
+        } catch (e) {
+          console.warn("Offline photo sync upload error:", e);
+        }
+      }
+
+      let syncedAudioUrl = null;
+      const offlineAudioSource = report.audioBlob || report.audioBase64 || report.audioUrl;
+      if (supabaseService.isConfigured() && offlineAudioSource) {
+        try {
+          syncedAudioUrl = await supabaseService.uploadAudioFile(offlineAudioSource, report.localId || "offline");
+        } catch (e) {
+          console.warn("Offline audio sync upload error:", e);
+        }
+      }
+
+      const activePlayableAudio = syncedAudioUrl || restoredAudioUrl || null;
+
       // 3. Check for duplicate/corroborating cluster
       const dupCheck = duplicateDetector.processIncomingReport(
-        { ...report, audioUrl: restoredAudioUrl, aiClassification: aiResult },
+        { ...report, photoUrl: syncedPhotoUrl || report.photoUrl, audioUrl: activePlayableAudio, aiClassification: aiResult },
         currentIncidents
       );
 
@@ -200,12 +222,17 @@ export const EmergencyProvider = ({ children }) => {
 
       if (dupCheck.isDuplicate) {
         // Update the existing cluster
+        const updatedCluster = {
+          ...dupCheck.updatedIncident,
+          photoUrl: syncedPhotoUrl || dupCheck.updatedIncident.photoUrl,
+          audioUrl: syncedAudioUrl || dupCheck.updatedIncident.audioUrl
+        };
         currentIncidents = currentIncidents.map((inc) =>
-          inc.id === dupCheck.matchedIncidentId ? dupCheck.updatedIncident : inc
+          inc.id === dupCheck.matchedIncidentId ? updatedCluster : inc
         );
         resultingIncidentId = dupCheck.matchedIncidentId;
         if (supabaseService.isConfigured()) {
-          supabaseService.updateIncident(dupCheck.matchedIncidentId, dupCheck.updatedIncident);
+          await supabaseService.updateIncident(dupCheck.matchedIncidentId, updatedCluster);
         }
       } else {
         // Create new incident
@@ -227,11 +254,11 @@ export const EmergencyProvider = ({ children }) => {
           hasMedicalEmergency: report.hasMedicalEmergency || false,
           medicalDetails: report.medicalDetails || "",
           description: report.description || "Field emergency alert logged by citizen.",
-          photoUrl: report.photoUrl || null,
+          photoUrl: syncedPhotoUrl || report.photoUrl || null,
           aiClassification: aiResult,
           voiceTranscript: report.voiceTranscript || "",
-          audioUrl: restoredAudioUrl,
-          audioBase64: report.audioBase64 || null,
+          audioUrl: syncedAudioUrl || activePlayableAudio,
+          audioBase64: null,
           isOfflineSync: true,
           syncedAt: new Date().toISOString(),
           recommendedResource: aiResult?.recommendedResource || "Rescue Boat",
@@ -245,7 +272,7 @@ export const EmergencyProvider = ({ children }) => {
         currentIncidents.unshift(newIncident);
         resultingIncidentId = newIncident.id;
         if (supabaseService.isConfigured()) {
-          supabaseService.insertIncident(newIncident);
+          await supabaseService.insertIncident(newIncident);
         }
       }
 
@@ -392,22 +419,35 @@ export const EmergencyProvider = ({ children }) => {
         );
       }
 
-      // Ensure audioBase64 is resolved if only blob URL exists
-      let persistentAudio = rawReport.audioBase64;
-      if (!persistentAudio && rawReport.audioUrl && rawReport.audioUrl.startsWith("blob:") && typeof window !== "undefined") {
+      // Generate unique incident ID upfront
+      const incidentId = "INC-2026-" + Math.floor(100 + Math.random() * 900);
+
+      // 1. Upload Photo to Supabase Storage Bucket ('incident-media') first
+      let publicPhotoUrl = rawReport.photoUrl;
+      if (supabaseService.isConfigured() && publicPhotoUrl && !publicPhotoUrl.startsWith("http")) {
         try {
-          const res = await fetch(rawReport.audioUrl);
-          if (res.ok) {
-            const blob = await res.blob();
-            persistentAudio = await storageService.blobToBase64(blob);
-          }
+          publicPhotoUrl = await supabaseService.uploadPhotoFile(publicPhotoUrl, incidentId);
         } catch (e) {
-          console.warn("Could not convert audio blob to base64:", e);
+          console.warn("Photo storage upload notice:", e);
         }
       }
 
+      // 2. Upload Audio Recording to Supabase Storage Bucket ('incident-media' / 'audio-reports') first
+      let publicAudioUrl = null;
+      const audioSource = rawReport.audioBlob || rawReport.audioUrl || rawReport.audioBase64;
+      if (supabaseService.isConfigured() && audioSource) {
+        try {
+          publicAudioUrl = await supabaseService.uploadAudioFile(audioSource, incidentId);
+        } catch (e) {
+          console.warn("Audio storage upload notice:", e);
+        }
+      }
+
+      // Playable audio URL locally: prefer public storage URL, or fallback to existing temporary audioUrl
+      const activePlayableAudio = publicAudioUrl || rawReport.audioUrl || null;
+
       const dupCheck = duplicateDetector.processIncomingReport(
-        { ...rawReport, aiClassification: aiResult, timestamp, audioBase64: persistentAudio },
+        { ...rawReport, photoUrl: publicPhotoUrl || rawReport.photoUrl, audioUrl: activePlayableAudio, aiClassification: aiResult, timestamp },
         incidents
       );
 
@@ -418,8 +458,9 @@ export const EmergencyProvider = ({ children }) => {
         corroboratingReportsCount: 1
       });
 
+      // Save only lightweight text URLs into the incident record (zero base64 strings to prevent 413 errors)
       const newCitizenIncident = {
-        id: "INC-2026-" + Math.floor(100 + Math.random() * 900),
+        id: incidentId,
         title: rawReport.title || `${rawReport.category.toUpperCase()} Crisis at ${rawReport.location.address}`,
         category: rawReport.category,
         severity: scored.severity,
@@ -430,11 +471,11 @@ export const EmergencyProvider = ({ children }) => {
         hasMedicalEmergency: rawReport.hasMedicalEmergency || false,
         medicalDetails: rawReport.medicalDetails || "",
         description: rawReport.description || "Field emergency alert logged by citizen.",
-        photoUrl: rawReport.photoUrl || null,
+        photoUrl: publicPhotoUrl || rawReport.photoUrl || null,
         aiClassification: aiResult,
         voiceTranscript: rawReport.voiceTranscript || "",
-        audioUrl: persistentAudio || rawReport.audioUrl || null,
-        audioBase64: persistentAudio || null,
+        audioUrl: publicAudioUrl || activePlayableAudio,
+        audioBase64: null, // Strictly null so raw base64 never inflates database insert payloads
         recommendedResource: aiResult?.recommendedResource || "Rescue Boat",
         assignedUnit: null,
         priorityScore: scored.priorityScore,
@@ -450,8 +491,8 @@ export const EmergencyProvider = ({ children }) => {
         // Merge into existing cluster locally
         const mergedCluster = {
           ...dupCheck.updatedIncident,
-          photoUrl: dupCheck.updatedIncident.photoUrl || newCitizenIncident.photoUrl,
-          audioUrl: dupCheck.updatedIncident.audioUrl || newCitizenIncident.audioUrl
+          photoUrl: publicPhotoUrl || dupCheck.updatedIncident.photoUrl,
+          audioUrl: publicAudioUrl || activePlayableAudio || dupCheck.updatedIncident.audioUrl
         };
 
         setIncidents((prev) =>
@@ -461,10 +502,10 @@ export const EmergencyProvider = ({ children }) => {
         isMerged = true;
 
         if (supabaseService.isConfigured()) {
-          // Always insert citizen distress report into Supabase so audio & photo are visible in Table Editor
-          supabaseService.insertIncident(newCitizenIncident);
+          // Always insert citizen distress report into Supabase with public storage URLs
+          await supabaseService.insertIncident(newCitizenIncident);
           // Also update the cluster in Supabase
-          supabaseService.updateIncident(dupCheck.matchedIncidentId, mergedCluster);
+          await supabaseService.updateIncident(dupCheck.matchedIncidentId, mergedCluster);
         }
 
         addToast({
@@ -477,14 +518,17 @@ export const EmergencyProvider = ({ children }) => {
         setIncidents((prev) => [newCitizenIncident, ...prev]);
         finalIncidentId = newCitizenIncident.id;
         if (supabaseService.isConfigured()) {
-          supabaseService.insertIncident(newCitizenIncident);
+          await supabaseService.insertIncident(newCitizenIncident);
         }
       }
 
-      // Add to citizen personal history
+      // Add to citizen personal history with public URL
       storageService.addUserReport({
         id: finalIncidentId,
         ...rawReport,
+        photoUrl: publicPhotoUrl || rawReport.photoUrl,
+        audioUrl: publicAudioUrl || activePlayableAudio,
+        audioBase64: null,
         timestamp,
         status: "Pending"
       });

@@ -23,6 +23,7 @@ export const VoiceRecorderModal = ({
   setAudioUrl,
   audioBase64,
   setAudioBase64,
+  setAudioBlob,
   category = "flood"
 }) => {
   const { t, language, setLanguage } = useEmergency();
@@ -208,6 +209,9 @@ export const VoiceRecorderModal = ({
         if (audioResult?.blob) {
           recordedBlob = audioResult.blob;
           recordedBlobRef.current = audioResult.blob;
+          if (setAudioBlob) {
+            setAudioBlob(audioResult.blob);
+          }
           if (setAudioBase64) {
             speechService.convertBlobToBase64(audioResult.blob).then((b64) => {
               setAudioBase64(b64);
@@ -313,6 +317,9 @@ export const VoiceRecorderModal = ({
     setIsPlaying(false);
     setPlaybackProgress(0);
     recordedBlobRef.current = null;
+    if (setAudioBlob) {
+      setAudioBlob(null);
+    }
     if (setAudioUrl) {
       setAudioUrl(null);
     }
