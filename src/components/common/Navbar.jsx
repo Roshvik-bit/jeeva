@@ -41,8 +41,8 @@ export const Navbar = () => {
             onClick={() => setActivePortal("landing")}
             className="flex items-center gap-2.5 text-left group transition-opacity"
           >
-            <div className="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center shadow-sm">
-              <ShieldAlert className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-xs overflow-hidden p-0.5 group-hover:border-slate-300 transition-colors">
+              <img src="/logo.png" alt="JEEVA Logo" className="w-full h-full object-contain" />
             </div>
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight text-slate-900 leading-none">

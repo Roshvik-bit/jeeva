@@ -21,6 +21,10 @@ export const LandingHero = () => {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-16 space-y-10">
       {/* Main Heading & Subtitle */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
+        <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-white border border-slate-200 shadow-sm mb-1">
+          <img src="/logo.png" alt="JEEVA Logo" className="w-16 h-16 sm:w-20 sm:h-20 object-contain" />
+        </div>
+
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
           {t.heroTitle || "Jeeva"}
           <span className="block text-xl sm:text-2xl font-bold text-blue-700 mt-1">
