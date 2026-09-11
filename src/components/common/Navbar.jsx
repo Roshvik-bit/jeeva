@@ -36,89 +36,81 @@ export const Navbar = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
-        {/* Brand & SIH Badge */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+        {/* Jeeva Logo Pill */}
+        <div className="flex items-center gap-3">
           <button
             onClick={() => setActivePortal("landing")}
-            className="flex items-center gap-2 text-left group"
+            className="flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 hover:border-slate-700 transition-all group shadow-sm"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-600 to-rose-700 flex items-center justify-center shadow-lg shadow-rose-600/30 group-hover:scale-105 transition-transform">
-              <ShieldAlert className="w-6 h-6 text-white animate-pulse" />
+            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-rose-500 to-red-600 flex items-center justify-center shadow-md shadow-rose-600/30 group-hover:scale-105 transition-transform">
+              <ShieldAlert className="w-4 h-4 text-white" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-lg sm:text-xl tracking-wider text-white font-mono">
-                  {t.appName}
-                </span>
-                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                  SIH26013
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 truncate max-w-[140px] sm:max-w-xs leading-none mt-0.5">
-                {t.appSubtitle}
-              </p>
+            <div className="flex items-center gap-1.5">
+              <span className="font-extrabold text-sm sm:text-base tracking-wider text-white font-mono">
+                JEEVA
+              </span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 font-bold hidden sm:inline">
+                RESCUE
+              </span>
             </div>
           </button>
         </div>
 
-        {/* Center: Portal Navigation Switcher */}
-        <div className="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 shadow-inner">
+        {/* Center: Clean Page Links */}
+        <nav className="flex items-center bg-slate-900/80 p-1 rounded-full border border-slate-800/80 shadow-inner">
           <button
             onClick={() => setActivePortal("citizen")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all ${
               activePortal === "citizen"
-                ? "bg-rose-600 text-white shadow-md shadow-rose-600/30"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-rose-600 text-white shadow-md shadow-rose-600/30 font-bold"
+                : "text-slate-400 hover:text-white"
             }`}
           >
             <Radio className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">{t.switchToCitizen}</span>
-            <span className="xs:hidden">SOS</span>
+            <span>Citizen App</span>
           </button>
 
           <button
             onClick={() => setActivePortal("dashboard")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all ${
               activePortal === "dashboard"
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30 font-bold"
+                : "text-slate-400 hover:text-white"
             }`}
           >
             <LayoutDashboard className="w-3.5 h-3.5" />
-            <span className="hidden xs:inline">{t.switchToDashboard}</span>
-            <span className="xs:hidden">Command</span>
+            <span>Rescue Dashboard</span>
           </button>
-        </div>
+        </nav>
 
-        {/* Right side: Network Switch + Multilingual Selector + Siren Test */}
-        <div className="flex items-center gap-1.5 sm:gap-3">
-          {/* Offline/Online Simulation Toggle */}
+        {/* Right: Connectivity Indicator & Language */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Live Connectivity Pill Indicator ("🟢 Online" / "🔴 Offline") */}
           <button
             onClick={() => toggleOnlineStatus()}
-            title={isOnline ? "Click to simulate Offline Mode" : "Click to simulate Online Reconnect"}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+            title={isOnline ? "Click to simulate Offline Mode" : "Click to simulate Online Reconnection"}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold border transition-all cursor-pointer shadow-sm ${
               isOnline
-                ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-400 hover:bg-emerald-900/40"
-                : "bg-amber-950/60 border-amber-500/60 text-amber-300 animate-pulse hover:bg-amber-900/60"
+                ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/40 hover:border-emerald-400"
+                : "bg-rose-950/50 border-rose-500/60 text-rose-300 animate-pulse hover:bg-rose-900/50"
             }`}
           >
             {isOnline ? (
               <>
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                 </span>
-                <Wifi className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">{t.online}</span>
+                <span>🟢 Online</span>
               </>
             ) : (
               <>
-                <WifiOff className="w-3.5 h-3.5 text-amber-400" />
-                <span>{t.offline}</span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                <span>🔴 Offline</span>
                 {offlineOutbox.length > 0 && (
-                  <span className="ml-0.5 px-1.5 py-0.2 bg-amber-500 text-slate-950 text-[10px] font-extrabold rounded-full">
+                  <span className="ml-0.5 px-1.5 py-0.2 bg-rose-500 text-slate-950 text-[10px] font-black rounded-full">
                     {offlineOutbox.length}
                   </span>
                 )}

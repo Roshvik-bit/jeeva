@@ -101,7 +101,7 @@ export const CitizenPortal = () => {
               </p>
             </div>
 
-            <EmergencyReportForm onSubmitted={() => setActiveTab("sos")} />
+            <EmergencyReportForm />
           </div>
         )}
       </div>

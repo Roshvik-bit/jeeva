@@ -3,22 +3,29 @@ import { useEmergency } from "../../context/EmergencyContext";
 import {
   AlertOctagon,
   Users,
-  Truck,
-  Clock,
-  Layers,
-  CheckCircle2,
-  FileSpreadsheet
+  AlertTriangle,
+  Flame,
+  ShieldAlert,
+  FileSpreadsheet,
+  Activity,
+  CheckCircle2
 } from "lucide-react";
 
 export const CommandAnalyticsBar = () => {
   const { incidents, rescueUnits, addToast } = useEmergency();
 
-  const totalIncidents = incidents.length;
-  const criticalCount = incidents.filter(
-    (i) => i.severity === "Critical" && i.status !== "Resolved"
-  ).length;
   const activeIncidents = incidents.filter((i) => i.status !== "Resolved").length;
   const resolvedCount = incidents.filter((i) => i.status === "Resolved").length;
+
+  const criticalCount = incidents.filter(
+    (i) => (i.severity === "Critical" || i.priorityScore >= 85) && i.status !== "Resolved"
+  ).length;
+
+  const highPriorityCount = incidents.filter(
+    (i) =>
+      (i.severity === "High" || (i.priorityScore >= 65 && i.priorityScore < 85)) &&
+      i.status !== "Resolved"
+  ).length;
 
   const totalPeopleAffected = incidents
     .filter((i) => i.status !== "Resolved")
@@ -26,17 +33,16 @@ export const CommandAnalyticsBar = () => {
 
   const unitsDeployed = rescueUnits.filter((u) => u.status !== "Available").length;
 
-  const corroboratedClusters = incidents.filter(
-    (i) => (i.corroboratingReportsCount || 1) > 1
-  ).length;
-
   const handleExportBrief = () => {
     const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
       JSON.stringify(incidents, null, 2)
     )}`;
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", jsonString);
-    downloadAnchor.setAttribute("download", `JEEVA_Disaster_Briefing_${new Date().toISOString().slice(0, 10)}.json`);
+    downloadAnchor.setAttribute(
+      "download",
+      `JEEVA_Disaster_Briefing_${new Date().toISOString().slice(0, 10)}.json`
+    );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
@@ -49,123 +55,113 @@ export const CommandAnalyticsBar = () => {
   };
 
   return (
-    <div className="space-y-2.5">
-      {/* Header Bar with Export Button */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+    <div className="space-y-3">
+      {/* Header Bar with Telemetry Meta & Export */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
         <div>
-          <h2 className="text-lg sm:text-xl font-black text-white tracking-wide font-mono flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-            INCIDENT COMMAND & TELEMETRY
-          </h2>
-          <p className="text-xs text-slate-400">
-            Real-time multi-source disaster triage & spatial consolidation
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h2 className="text-base sm:text-lg font-black text-white tracking-wide font-mono">
+              INCIDENT COMMAND & TELEMETRY
+            </h2>
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+              LIVE FEED
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Real-time multi-source disaster triage, automated clustering & tactical routing
           </p>
         </div>
 
-        <button
-          onClick={handleExportBrief}
-          className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white transition-colors"
-        >
-          <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Export Disaster Brief (JSON)</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-800 text-[11px] text-slate-300 font-mono">
+            <Activity className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+            <span>Units Deployed: <strong className="text-white">{unitsDeployed} / {rescueUnits.length}</strong></span>
+          </div>
+
+          <button
+            onClick={handleExportBrief}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white transition-colors shadow-sm"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Export Brief</span>
+          </button>
+        </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
-        {/* Active Incidents */}
-        <div className="bg-slate-900/80 border border-slate-800/90 rounded-xl p-3 shadow-md">
+      {/* 4 Rounded Bento Summary Metric Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Card 1: Active Incidents */}
+        <div className="bento-card p-4 transition-all hover:border-slate-700 group">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Active Events
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Active Incidents
             </span>
-            <AlertOctagon className="w-4 h-4 text-rose-400" />
+            <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <AlertOctagon className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-xl sm:text-2xl font-black text-white font-mono mt-1">
+          <p className="text-2xl sm:text-3xl font-black text-white font-mono mt-2">
             {activeIncidents}
           </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
-            {resolvedCount} resolved so far
-          </p>
+          <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-slate-400">
+            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+            <span>{resolvedCount} resolved so far</span>
+          </div>
         </div>
 
-        {/* Critical Urgency */}
-        <div className="bg-rose-950/30 border border-rose-500/30 rounded-xl p-3 shadow-md">
+        {/* Card 2: Critical Incidents */}
+        <div className="bento-card p-4 border-rose-500/30 bg-gradient-to-br from-slate-900/90 via-slate-900/80 to-rose-950/20 transition-all hover:border-rose-500/50 group">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-300">
-              Critical Urgency
+            <span className="text-[11px] font-bold uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+              Critical
             </span>
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+            <div className="w-8 h-8 rounded-lg bg-rose-500/20 border border-rose-500/30 text-rose-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Flame className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-xl sm:text-2xl font-black text-rose-400 font-mono mt-1">
+          <p className="text-2xl sm:text-3xl font-black text-rose-400 font-mono mt-2">
             {criticalCount}
           </p>
-          <p className="text-[10px] text-rose-400/70 mt-0.5">
+          <p className="text-[11px] text-rose-400/80 mt-1.5 font-medium">
             Immediate dispatch tier
           </p>
         </div>
 
-        {/* Trapped Civilians */}
-        <div className="bg-slate-900/80 border border-slate-800/90 rounded-xl p-3 shadow-md">
+        {/* Card 3: High Priority */}
+        <div className="bento-card p-4 transition-all hover:border-amber-500/40 group">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Trapped Civilians
+            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-300">
+              High Priority
             </span>
-            <Users className="w-4 h-4 text-amber-400" />
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
           </div>
-          <p className="text-xl sm:text-2xl font-black text-amber-400 font-mono mt-1">
+          <p className="text-2xl sm:text-3xl font-black text-amber-400 font-mono mt-2">
+            {highPriorityCount}
+          </p>
+          <p className="text-[11px] text-slate-400 mt-1.5">
+            Priority response queue
+          </p>
+        </div>
+
+        {/* Card 4: Potentially Affected People */}
+        <div className="bento-card p-4 transition-all hover:border-indigo-500/40 group">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300">
+              Potentially Affected
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <p className="text-2xl sm:text-3xl font-black text-indigo-300 font-mono mt-2">
             {totalPeopleAffected}
           </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
-            Aggregated victim count
-          </p>
-        </div>
-
-        {/* Units Deployed */}
-        <div className="bg-slate-900/80 border border-slate-800/90 rounded-xl p-3 shadow-md">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Units Deployed
-            </span>
-            <Truck className="w-4 h-4 text-indigo-400" />
-          </div>
-          <p className="text-xl sm:text-2xl font-black text-indigo-300 font-mono mt-1">
-            {unitsDeployed} / {rescueUnits.length}
-          </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
-            Boats, EMS, Earthmovers
-          </p>
-        </div>
-
-        {/* Corroborated Clusters */}
-        <div className="bg-slate-900/80 border border-slate-800/90 rounded-xl p-3 shadow-md">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Consolidated
-            </span>
-            <Layers className="w-4 h-4 text-cyan-400" />
-          </div>
-          <p className="text-xl sm:text-2xl font-black text-cyan-400 font-mono mt-1">
-            {corroboratedClusters}
-          </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
-            De-duplicated clusters
-          </p>
-        </div>
-
-        {/* Mean Response Time */}
-        <div className="bg-slate-900/80 border border-slate-800/90 rounded-xl p-3 shadow-md">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Mean Dispatch
-            </span>
-            <Clock className="w-4 h-4 text-emerald-400" />
-          </div>
-          <p className="text-xl sm:text-2xl font-black text-emerald-400 font-mono mt-1">
-            11.4 m
-          </p>
-          <p className="text-[10px] text-slate-500 mt-0.5">
-            From distress to wheels rolling
+          <p className="text-[11px] text-slate-400 mt-1.5">
+            Aggregated civilian victim count
           </p>
         </div>
       </div>

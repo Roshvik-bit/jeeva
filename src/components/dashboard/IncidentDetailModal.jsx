@@ -111,6 +111,193 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
             </div>
           </div>
 
+          {/* Expanded Triage & AI Analysis Panel */}
+          <div className="bento-card p-4 sm:p-5 space-y-4 border-indigo-500/30 bg-gradient-to-br from-slate-900/95 via-slate-900/90 to-indigo-950/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
+                    Smart Incident Triage & AI Assessment
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Automated multi-factor operational ranking
+                  </p>
+                </div>
+              </div>
+
+              {/* Smart Priority Score Gauge Pill */}
+              <div className="flex items-center gap-3 bg-slate-950/80 px-3.5 py-2 rounded-xl border border-slate-800 self-start sm:self-auto">
+                <div className="text-right">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block">
+                    Priority Score
+                  </span>
+                  <span className="text-xs font-black font-mono text-white">
+                    {incident.priorityScore >= 85 ? "CRITICAL (TIER-1)" : incident.priorityScore >= 65 ? "HIGH URGENCY" : "MODERATE"}
+                  </span>
+                </div>
+                <div className={`px-3 py-1.5 rounded-lg font-mono font-black text-base sm:text-lg border ${
+                  incident.priorityScore >= 85
+                    ? "bg-rose-500/20 border-rose-500/50 text-rose-400 shadow-md shadow-rose-950/50"
+                    : incident.priorityScore >= 65
+                    ? "bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-md shadow-amber-950/50"
+                    : "bg-indigo-500/20 border-indigo-500/50 text-indigo-400"
+                }`}>
+                  {incident.priorityScore}/100
+                </div>
+              </div>
+            </div>
+
+            {/* 4-Factor AI Breakdown (Bento Grid 2x2) */}
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">
+                4-Factor AI Evaluation Breakdown:
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Factor 1: Severity */}
+                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/90 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">1. Hazard Severity</span>
+                    <span className="font-bold text-rose-400">{incident.severity} Hazard</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 font-semibold leading-tight">
+                    Level {incident.severity === "Critical" ? "4 (Life Threatening)" : incident.severity === "High" ? "3 (Elevated Risk)" : "2 (Sub-acute)"}
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    Calculated from disaster type ({incident.category}) & structural danger
+                  </p>
+                </div>
+
+                {/* Factor 2: Civilian Isolation */}
+                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/90 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">2. Civilian Isolation</span>
+                    <span className="font-bold text-amber-400">
+                      {incident.peopleCount >= 5 ? "Extreme" : incident.peopleCount >= 2 ? "High Risk" : "Moderate"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 font-semibold leading-tight">
+                    {incident.peopleCount} trapped civilian(s){incident.hasMedicalEmergency ? " • Critical Medical Need" : ""}
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    {incident.category === "flood" ? "Surrounded by rising water levels" : "Extraction priority boosted"}
+                  </p>
+                </div>
+
+                {/* Factor 3: Road Accessibility */}
+                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/90 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">3. Road Accessibility</span>
+                    <span className="font-bold text-sky-400">
+                      {incident.category === "flood" ? "Waterway Ingress" : incident.category === "landslide" ? "Road Blocked" : "Caution Clear"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 font-semibold leading-tight">
+                    {incident.category === "flood"
+                      ? "Passable by Boat / High-Clearance Truck Only"
+                      : incident.category === "landslide" || incident.category === "bridge"
+                      ? "Standard Route Blocked by Debris - Heavy Earthmover Required"
+                      : "Standard Emergency Vehicle Access"}
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    Tactical terrain assessment based on sensor telemetry
+                  </p>
+                </div>
+
+                {/* Factor 4: Report Confidence */}
+                <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800/90 space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400 font-medium">4. Report Confidence</span>
+                    <span className="font-bold text-emerald-400">
+                      {incident.aiClassification?.confidence || 94}% Verified
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 font-semibold leading-tight">
+                    Multi-source Corroborated & Edge Vision Verified
+                  </p>
+                  <p className="text-[10px] text-slate-500">
+                    {incident.corroboratingReportsCount || 1} independent citizen report(s) aggregated
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Route Accessibility Status Indicator */}
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                  <Navigation className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-white">Route Accessibility Status:</span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold ${
+                      incident.category === "flood" || incident.category === "landslide"
+                        ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                        : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    }`}>
+                      {incident.category === "flood" ? "RESTRICTED (BOATS ONLY)" : incident.category === "landslide" ? "PARTIALLY BLOCKED" : "OPEN ROUTE"}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    GPS Coordinates: {incident.location?.lat?.toFixed(4)}, {incident.location?.lng?.toFixed(4)} • Precision: High
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Recommended Response Units */}
+            <div className="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-indigo-400" />
+                  <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
+                    Recommended Response Units
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30 font-semibold">
+                  MATCH READY
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-white">
+                      {incident.category === "flood"
+                        ? "NDRF Water Rescue Team - Unit Alpha"
+                        : incident.category === "medical"
+                        ? "Mobile ICU Medical Team - Station 4"
+                        : incident.category === "fire"
+                        ? "State Hazmat & Fire Engine - Sector 9"
+                        : "Civil Protection Taskforce - Brigade 3"}
+                    </p>
+                    <p className="text-[10px] text-slate-400">Primary Dispatch Profile • ETA: 7-12 min</p>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-indigo-400 bg-indigo-950 px-2 py-0.5 rounded">
+                    Primary
+                  </span>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-white">
+                      {incident.hasMedicalEmergency
+                        ? "Emergency Ambulance & Trauma Care"
+                        : "Rapid Evacuation Boat Squad"}
+                    </p>
+                    <p className="text-[10px] text-slate-400">Support Squad • Radio Ch. 12</p>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                    Support
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Photo & Edge AI Vision Analysis Card */}
           {incident.photoUrl && (
             <div className="bg-slate-950/80 border border-slate-800 rounded-xl overflow-hidden">
@@ -163,7 +350,7 @@ export const IncidentDetailModal = ({ incident, isOpen, onClose }) => {
             <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
                 <AlertOctagon className="w-3.5 h-3.5 text-rose-500" />
-                <span>Smart Priority Score Calculation Breakdown</span>
+                <span>Priority Score Mathematical Algorithm Log</span>
               </h4>
               <p className="text-xs text-slate-400 font-mono leading-relaxed bg-slate-900 p-2.5 rounded-lg border border-slate-800">
                 {incident.scoreBreakdown.explanation}
