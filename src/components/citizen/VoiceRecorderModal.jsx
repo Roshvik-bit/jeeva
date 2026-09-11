@@ -343,6 +343,7 @@ export const VoiceRecorderModal = ({
   const quickLanguages = [
     { code: "en", label: "EN" },
     { code: "hi", label: "हिंदी" },
+    { code: "kn", label: "ಕನ್ನಡ" },
     { code: "bn", label: "বাংলা" },
     { code: "ta", label: "தமிழ்" },
     { code: "te", label: "తెలుగు" },

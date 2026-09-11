@@ -24,6 +24,7 @@ export const Navbar = () => {
   const languages = [
     { code: "en", label: "English" },
     { code: "hi", label: "हिन्दी (Hindi)" },
+    { code: "kn", label: "ಕನ್ನಡ (Kannada)" },
     { code: "bn", label: "বাংলা (Bengali)" },
     { code: "ta", label: "தமிழ் (Tamil)" },
     { code: "te", label: "తెలుగు (Telugu)" },

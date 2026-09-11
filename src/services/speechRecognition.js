@@ -6,13 +6,14 @@
  * 2. Real Web Audio API frequency analysis for true microphone waveform response
  * 3. Multilingual Web Speech API (Speech-to-Text) with live interim & final dictation
  * 4. Real Multimodal Gemini AI Audio Transcription when VITE_GEMINI_API_KEY is present
- * 5. High-fidelity contextual disaster distress transcription engine across all 7 supported languages
- *    (English, Hindi, Bengali, Tamil, Telugu, Malayalam, Marathi)
+ * 5. High-fidelity contextual disaster distress transcription engine across all 8 supported languages
+ *    (English, Hindi, Kannada, Bengali, Tamil, Telugu, Malayalam, Marathi)
  */
 
 export const LANG_LOCALE_MAP = {
   en: "en-IN",
   hi: "hi-IN",
+  kn: "kn-IN",
   bn: "bn-IN",
   ta: "ta-IN",
   te: "te-IN",
@@ -23,6 +24,7 @@ export const LANG_LOCALE_MAP = {
 export const LANG_NAME_MAP = {
   en: "English",
   hi: "Hindi (हिंदी)",
+  kn: "Kannada (ಕನ್ನಡ)",
   bn: "Bengali (বাংলা)",
   ta: "Tamil (தமிழ்)",
   te: "Telugu (తెలుగు)",
@@ -31,7 +33,7 @@ export const LANG_NAME_MAP = {
 };
 
 /**
- * Category-specific distress scripts across all 7 Indian languages
+ * Category-specific distress scripts across all 8 Indian languages
  * Provides high-fidelity realistic emergency transcriptions matching
  * the citizen's disaster category and selected language.
  */
@@ -279,6 +281,41 @@ export const CATEGORY_DISTRESS_SCRIPTS = {
     ],
     general: [
       "आमच्या भागात गंभीर परिस्थिती निर्माण झाली आहे. पाणी वेगाने वाढत आहे, त्वरित मदतकार्य सुरू करा!"
+    ]
+  },
+  kn: {
+    flood: [
+      "ಪ್ರವಾಹದ ನೀರು ನಮ್ಮ ಮನೆಯ ಮೊದಲ ಮಹಡಿಯವರೆಗೆ ತಲುಪಿದೆ! ನಾವು 4 ಜನರು ಮೇಲ್ಛಾವಣಿಯಲ್ಲಿ ಸಿಲುಕಿಕೊಂಡಿದ್ದೇವೆ, ತಕ್ಷಣ ರಕ್ಷಣಾ ಬೋಟ್ ಕಳುಹಿಸಿ!",
+      "ರಸ್ತೆಯಲ್ಲಿ 5 ಅಡಿಗಿಂತ ಹೆಚ್ಚು ನೀರು ನಿಂತಿದೆ. ಹಿರಿಯ ರೋಗಿ ಮತ್ತು ಮಗು ಮನೆಯಲ್ಲಿ ಸಿಲುಕಿಕೊಂಡಿದ್ದಾರೆ, ತಕ್ಷಣ ಬೋಟ್ ಕಳುಹಿಸಿ!",
+      "ನದಿ ಪ್ರವಾಹದಿಂದ ನಮ್ಮ ಮನೆಗೆ ನೀರು ನುಗ್ಗುತ್ತಿದೆ. ಮುಖ್ಯ ರಸ್ತೆಯ ಸಂಪರ್ಕ ಕಡಿದುಹೋಗಿದೆ, ತಕ್ಷಣ ಸಹಾಯ ಕಳುಹಿಸಿ!"
+    ],
+    trapped: [
+      "ನಾವು ಕಟ್ಟಡದೊಳಗೆ ಸಿಲುಕಿಕೊಂಡಿದ್ದೇವೆ ಮತ್ತು ಹೊರಬರಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ದಯವಿಟ್ಟು ನಮ್ಮನ್ನು ತಕ್ಷಣ ರಕ್ಷಿಸಿ!",
+      "ಸುತ್ತಲೂ ನೀರು ಆವರಿಸಿದ್ದರಿಂದ ಹೊರಬರಲು ದಾರಿಯಿಲ್ಲ. 3 ಜನರು ಮೊದಲ ಮಹಡಿಯಲ್ಲಿ ರಕ್ಷಣೆಗಾಗಿ ಕಾಯುತ್ತಿದ್ದಾರೆ!",
+      "ಸಮುದಾಯ ಭವನದಲ್ಲಿ ಹಲವು ಕುಟುಂಬಗಳು ಸಿಲುಕಿವೆ. ಕುಡಿಯುವ ನೀರು ಮತ್ತು ವಿದ್ಯುತ್ ಇಲ್ಲ, ತಕ್ಷಣ ಸಹಾಯ ಬೇಕು!"
+    ],
+    medical: [
+      "ವೈದ್ಯಕೀಯ ತುರ್ತುಸ್ಥಿತಿ! ವೃದ್ಧರಿಗೆ ತೀವ್ರ ಉಸಿರಾಟದ ತೊಂದರೆಯಾಗಿದೆ, ತಕ್ಷಣ ಆಕ್ಸಿಜನ್ ಮತ್ತು ಆಂಬ್ಯುಲೆನ್ಸ್ ನೆರವು ಕಳುಹಿಸಿ!",
+      "ಹೃದ್ರೋಗಿಗೆ ತುರ್ತು ಔಷಧಿ ಬೇಕಾಗಿದೆ, ನೀರು ನಿಂತಿರುವುದರಿಂದ ಆಸ್ಪತ್ರೆಗೆ ಹೋಗಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ!",
+      "ಸ್ಥಳಾಂತರದ ಸಮಯದಲ್ಲಿ ವ್ಯಕ್ತಿಯೊಬ್ಬರ ಕಾಲಿಗೆ ತೀವ್ರ ಗಾಯವಾಗಿದೆ ಮತ್ತು ರಕ್ತಸ್ರಾವವಾಗುತ್ತಿದೆ, ತಕ್ಷಣ ಪ್ರಥಮ ಚಿಕಿತ್ಸೆ ನೀಡಿ!"
+    ],
+    blocked_road: [
+      "ಮುಖ್ಯ ರಸ್ತೆಯಲ್ಲಿ ಭಾರಿ ಮರಗಳು ಮತ್ತು ವಿದ್ಯುತ್ ಕಂಬಗಳು ಬಿದ್ದಿರುವುದರಿಂದ ರಸ್ತೆ ಸಂಪೂರ್ಣ ಬಂದ್ ಆಗಿದೆ. ತೆರವು ಯಂತ್ರಗಳನ್ನು ಕಳುಹಿಸಿ!",
+      "ಭೂಕುಸಿತದಿಂದ ಮುಖ್ಯ ರಸ್ತೆ ಬಂದ್ ಆಗಿದೆ. ವಾಹನಗಳು ಸಿಲುಕಿಕೊಂಡಿವೆ, ತಕ್ಷಣ ಜೆಸಿಬಿ ಯಂತ್ರಗಳನ್ನು ಕಳುಹಿಸಿ!",
+      "ಮುರಿದ ವಿದ್ಯುತ್ ತಂತಿ ನೀರಿನಲ್ಲಿ ಬಿದ್ದಿರುವುದರಿಂದ ವಿದ್ಯುತ್ ಆಘಾತದ ಅಪಾಯವಿದೆ, ತಕ್ಷಣ ಸರಿಪಡಿಸಿ!"
+    ],
+    bridge: [
+      "ಸೇತುವೆಯ ಒಂದು ಭಾಗ ಕುಸಿದು ಕೊಚ್ಚಿಹೋಗಿದೆ. ವಾಹನ ಸಂಚಾರ ಸಂಪೂರ್ಣ ಸ್ಥಗಿತಗೊಂಡಿದೆ, ತಕ್ಷಣ ರಕ್ಷಣಾ ಕ್ರಮ ಕೈಗೊಳ್ಳಿ!",
+      "ಸೇತುವೆಯ ಪಿಲ್ಲರ್‌ನಲ್ಲಿ ಬಿರುಕು ಕಾಣಿಸಿಕೊಂಡಿದೆ, ಕುಸಿಯುವ ಭೀತಿ ಇದೆ. ತಕ್ಷಣ ಸಂಚಾರವನ್ನು ನಿಲ್ಲಿಸಿ!",
+      "ಸೇತುವೆಯ ಮೇಲಿಂದ ಭಾರಿ ವೇಗದಲ್ಲಿ ನೀರು ಹರಿಯುತ್ತಿದೆ, ತಕ್ಷಣ ಎಚ್ಚರಿಕೆ ಫಲಕಗಳನ್ನು ಅಳವಡಿಸಿ!"
+    ],
+    fire: [
+      "ನೀರಿನಲ್ಲಿ ಮುಳುಗಿರುವ ಟ್ರಾನ್ಸ್‌ಫಾರ್ಮರ್‌ನಲ್ಲಿ ಶಾರ್ಟ್ ಸರ್ಕ್ಯೂಟ್‌ನಿಂದ ಬೆಂಕಿ ಕಾಣಿಸಿಕೊಂಡಿದೆ. ತಕ್ಷಣ ಅಗ್ನಿಶಾಮಕ ವಾಹನವನ್ನು ಕಳುಹಿಸಿ!",
+      "ವಿದ್ಯುತ್ ತಂತಿಗಳಲ್ಲಿ ಬೆಂಕಿ ಹೊತ್ತಿಕೊಂಡಿದ್ದು ದಟ್ಟ ಹೊಗೆ ಆವರಿಸಿದೆ. ತಕ್ಷಣ ವಿದ್ಯುತ್ ಸಂಪರ್ಕ ಕಡಿತಗೊಳಿಸಿ!",
+      "ಹತ್ತಿರದ ಗೋದಾಮಿನಲ್ಲಿ ಬೆಂಕಿ ಕಾಣಿಸಿಕೊಂಡಿದೆ, ತಕ್ಷಣ ಅಗ್ನಿಶಾಮಕ ದಳವನ್ನು ಕಳುಹಿಸಿ!"
+    ],
+    general: [
+      "ನಮ್ಮ ಪ್ರದೇಶದಲ್ಲಿ ಗಂಭೀರ ತುರ್ತು ಪರಿಸ್ಥಿತಿ ಎದುರಾಗಿದೆ. ನೀರು ವೇಗವಾಗಿ ಹೆಚ್ಚುತ್ತಿದೆ, ತಕ್ಷಣ ರಕ್ಷಣಾ ತಂಡಗಳನ್ನು ಕಳುಹಿಸಿ!"
     ]
   }
 };

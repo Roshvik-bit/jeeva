@@ -3,7 +3,7 @@ import { useEmergency } from "../../context/EmergencyContext";
 import { Truck, Check, X, ShieldAlert, Sparkles, Navigation } from "lucide-react";
 
 export const DispatchUnitModal = ({ incident, isOpen, onClose }) => {
-  const { rescueUnits, dispatchRescueUnit } = useEmergency();
+  const { rescueUnits, dispatchRescueUnit, t } = useEmergency();
   const [selectedUnitId, setSelectedUnitId] = useState(null);
 
   if (!isOpen || !incident) return null;
@@ -145,7 +145,7 @@ export const DispatchUnitModal = ({ incident, isOpen, onClose }) => {
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-800"
           >
-            Cancel
+            {t.cancel || "Cancel"}
           </button>
 
           <button
@@ -155,7 +155,7 @@ export const DispatchUnitModal = ({ incident, isOpen, onClose }) => {
             className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold shadow-sm transition-all active:scale-95 flex items-center gap-1.5"
           >
             <Truck className="w-4 h-4" />
-            <span>Confirm & Dispatch</span>
+            <span>{t.confirmDispatch || "Confirm & Dispatch"}</span>
           </button>
         </div>
       </div>

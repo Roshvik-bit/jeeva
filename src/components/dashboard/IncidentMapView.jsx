@@ -4,7 +4,7 @@ import { useEmergency } from "../../context/EmergencyContext";
 import { Maximize2, Layers, Compass, Filter, RefreshCw } from "lucide-react";
 
 export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickDispatch }) => {
-  const { incidents, rescueUnits } = useEmergency();
+  const { incidents, rescueUnits, t } = useEmergency();
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersLayerRef = useRef(null);
@@ -424,16 +424,16 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
       {/* Legend Card in Bottom Left */}
       <div className="absolute bottom-3 left-3 z-[20] bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl p-2.5 shadow-md hidden sm:block">
         <p className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-          Incident Severity
+          {t.categoryLabel || "Incident Severity"}
         </p>
         <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-700">
           <div className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
-            <span>Critical</span>
+            <span>{t.criticalCard || "Critical"}</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-            <span>High</span>
+            <span>{t.highPriorityCard || "High"}</span>
           </div>
           <div className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
@@ -441,7 +441,7 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
           </div>
           <div className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-full bg-green-600"></span>
-            <span>Resolved</span>
+            <span>{t.statusResolved || "Resolved"}</span>
           </div>
         </div>
       </div>
