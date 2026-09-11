@@ -225,10 +225,10 @@ export const IncidentMapView = ({ onSelectIncident, selectedIncidentId, onQuickD
             </span>
           </div>
           <h4 style="font-size: 13px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; line-height: 1.3;">
-            ${inc.location?.address || inc.title}
+            ${inc.title || inc.location?.address || "Emergency Incident"}
           </h4>
           <p style="font-size: 11px; color: #64748b; margin: 0 0 8px 0;">
-            📍 ${inc.location.address}
+            📍 ${inc.location?.address || "Disaster Zone"}
           </p>
           <div style="display: flex; gap: 8px; font-size: 11px; color: #475569; margin-bottom: 10px; font-weight: 600;">
             <span>👥 ${inc.peopleCount} people</span>

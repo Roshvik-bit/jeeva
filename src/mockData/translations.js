@@ -53,6 +53,10 @@ export const translations = {
     collapse: "Structural Collapse",
     
     // Form Fields
+    titleLabel: "Incident Title / Headline",
+    titlePlaceholder: "E.g., Senior Care Home Flooded - Urgent Evacuation Needed",
+    titleHint: "Provide a clear headline. Rescue teams and dispatchers see this title first on the live incident board.",
+    customTitleHelp: "user specified",
     photoLabel: "Incident Photo & AI Analysis",
     takePhoto: "Take Photo / Upload",
     pickScenario: "Pick Test Scenario",
@@ -210,6 +214,10 @@ export const translations = {
     collapse: "भवन ढहना",
     
     // Form Fields
+    titleLabel: "घटना का शीर्षक / मुख्य विवरण",
+    titlePlaceholder: "उदा., वृद्धाश्रम में पानी भरा - तत्काल बचाव आवश्यक",
+    titleHint: "एक स्पष्ट शीर्षक प्रदान करें। बचाव दल और नियंत्रक सबसे पहले इस शीर्षक को देखते हैं।",
+    customTitleHelp: "उपयोगकर्ता द्वारा निर्दिष्ट",
     photoLabel: "आपदा की फोटो और एआई विश्लेषण",
     takePhoto: "फोटो लें / अपलोड करें",
     pickScenario: "टेस्ट फोटो चुनें",
@@ -363,6 +371,11 @@ export const translations = {
     landslide: "ভূমিধস",
     collapse: "ভবন ধস",
     
+    // Form Fields
+    titleLabel: "ঘটনার শিরোনাম / জরুরি হেডলাইন",
+    titlePlaceholder: "যেমন, বৃদ্ধাশ্রমে জল ঢুকেছে - দ্রুত উদ্ধারের প্রয়োজন",
+    titleHint: "একটি স্পষ্ট শিরোনাম দিন। উদ্ধারকারী দল ও কন্ট্রোল রুম প্রথমে এই শিরোনামটি দেখে।",
+    customTitleHelp: "ব্যবহারকারী প্রদত্ত",
     photoLabel: "ছবি ও এআই বিশ্লেষণ",
     takePhoto: "ছবি তুলুন / আপলোড করুন",
     pickScenario: "নমুনা ছবি বেছে নিন",
@@ -510,6 +523,11 @@ export const translations = {
     landslide: "நிலச்சரிவு",
     collapse: "கட்டிட இடிபாடு",
     
+    // Form Fields
+    titleLabel: "விபத்தின் தலைப்பு / அவசர தலைப்பு",
+    titlePlaceholder: "எ.கா., முதியோர் இல்லத்தில் வெள்ளம் - அவசர மீட்பு தேவை",
+    titleHint: "தெளிவான தலைப்பை வழங்கவும். மீட்புக் குழுவினர் முதலில் இந்தத் தலைப்பைப் பார்ப்பார்கள்.",
+    customTitleHelp: "பயனர் வழங்கியது",
     photoLabel: "புகைப்படம் மற்றும் AI ஆய்வு",
     takePhoto: "புகைப்படம் எடு / பதிவேற்று",
     pickScenario: "மாதிரி புகைப்படம்",
@@ -657,6 +675,11 @@ export const translations = {
     landslide: "కొండచరియలు విరిగిపడటం",
     collapse: "భవనం కూలడం",
     
+    // Form Fields
+    titleLabel: "సంఘటన శీర్షిక / అత్యవసర హెడ్‌లైన్",
+    titlePlaceholder: "ఉదా., వృద్ధాశ్రమంలో వరద నీరు - తక్షణ సహాయం అవసరం",
+    titleHint: "స్పష్టమైన శీర్షికను అందించండి. రెస్క్యూ బృందాలు మొదట ఈ శీర్షికను చూస్తాయి.",
+    customTitleHelp: "యూజర్ పేర్కొన్నది",
     photoLabel: "ఫోటో & AI విశ్లేషణ",
     takePhoto: "ఫోటో తీయి / అప్‌లోడ్",
     pickScenario: "సాంపిల్ ఫోటో ఎంచుకోండి",
@@ -804,6 +827,11 @@ export const translations = {
     landslide: "ഉരുൾപൊട്ടൽ",
     collapse: "കെട്ടിട തകർച്ച",
     
+    // Form Fields
+    titleLabel: "സംഭവത്തിന്റെ തലക്കെട്ട് / അടിയന്തര തലക്കെട്ട്",
+    titlePlaceholder: "ഉദാ., വൃദ്ധസദനത്തിൽ വെള്ളപ്പൊക്കം - അടിയന്തര രക്ഷാപ്രവർത്തനം വേണം",
+    titleHint: "വ്യക്തമായ തലക്കെട്ട് നൽകുക. രക്ഷാപ്രവർത്തകർ ആദ്യം കാണുന്നത് ഇതാണ്.",
+    customTitleHelp: "ഉപയോക്താവ് നൽകിയത്",
     photoLabel: "ഫോട്ടോയും AI വിശകലനവും",
     takePhoto: "ഫോട്ടോ എടുക്കുക / അപ്‌ലോഡ്",
     pickScenario: "സാമ്പിൾ ഫോട്ടോ",
@@ -951,6 +979,11 @@ export const translations = {
     landslide: "दरड कोसळणे",
     collapse: "इमारत कोसळणे",
     
+    // Form Fields
+    titleLabel: "घटनेचे शीर्षक / आणीबाणी हेडलाईन",
+    titlePlaceholder: "उदा., वृद्धाश्रमात पाणी शिरले - तातडीची मदत आवश्यक",
+    titleHint: "स्पष्ट शीर्षक द्या. बचाव पथके आणि नियंत्रण कक्ष हे शीर्षक प्रथम पाहतात.",
+    customTitleHelp: "वापरकर्त्याने दिलेले",
     photoLabel: "फोटो व एआय विश्लेषण",
     takePhoto: "फोटो काढा / अपलोड करा",
     pickScenario: "नमुना फोटो निवडा",
@@ -1102,6 +1135,10 @@ export const translations = {
     collapse: "ಕಟ್ಟಡ ಕುಸಿತ",
     
     // Form Fields
+    titleLabel: "ಘಟನೆಯ ಶೀರ್ಷಿಕೆ / ತುರ್ತು ಹೆಡ್‌ಲೈನ್",
+    titlePlaceholder: "ಉದಾ., ವೃದ್ಧಾಶ್ರಮ ಜಲಾವೃತ - ತುರ್ತು ರಕ್ಷಣೆ ಅಗತ್ಯವಿದೆ",
+    titleHint: "ಸ್ಪಷ್ಟ ಶೀರ್ಷಿಕೆಯನ್ನು ನೀಡಿ. ರಕ್ಷಣಾ ತಂಡಗಳು ಮೊದಲು ಈ ಶೀರ್ಷಿಕೆಯನ್ನು ನೋಡುತ್ತವೆ.",
+    customTitleHelp: "ಬಳಕೆದಾರರು ನೀಡಿದ್ದು",
     photoLabel: "ಘಟನೆಯ ಫೋಟೋ ಮತ್ತು AI ವಿಶ್ಲೇಷಣೆ",
     takePhoto: "ಫೋಟೋ ತೆಗೆಯಿರಿ / ಅಪ್‌ಲೋಡ್",
     pickScenario: "ಮಾದರಿ ಫೋಟೋ ಆಯ್ಕೆಮಾಡಿ",

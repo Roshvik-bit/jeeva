@@ -63,14 +63,16 @@ export const PriorityIncidentList = ({
                 : "border-slate-200 hover:border-slate-300 shadow-sm"
             }`}
           >
-            {/* Top row: Area / Title & Severity badge */}
+            {/* Top row: Incident Title & Severity badge */}
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
-                  {incident.location?.address || incident.title}
+                  {incident.title || incident.location?.address || incident.category}
                 </h3>
-                <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                  #{incident.id} • {incident.title !== incident.location?.address ? incident.title : incident.category}
+                <p className="text-[11px] text-slate-500 mt-0.5 truncate flex items-center gap-1.5">
+                  <span className="font-mono font-bold text-slate-700">#{incident.id}</span>
+                  <span>•</span>
+                  <span className="truncate">📍 {incident.location?.address || incident.category}</span>
                 </p>
               </div>
 

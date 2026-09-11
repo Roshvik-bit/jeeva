@@ -85,8 +85,8 @@ export const MyReportsDrawer = ({ isOpen, onClose }) => {
                       <span className="font-mono text-[10px] text-slate-500 font-bold tracking-wider">
                         #{rep.id || rep.localId}
                       </span>
-                      <h4 className="text-xs font-bold text-slate-900 capitalize">
-                        {rep.category || "Emergency Report"}
+                      <h4 className="text-xs font-bold text-slate-900 leading-snug">
+                        {rep.title || rep.category || "Emergency Report"}
                       </h4>
                     </div>
                     <div

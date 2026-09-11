@@ -25,6 +25,7 @@ import {
 export const EmergencyReportForm = ({ onSubmitted }) => {
   const { isOnline, submitDistressReport, setActivePortal, t } = useEmergency();
 
+  const [title, setTitle] = useState("");
   const [category, setCategory] = useState("flood");
   const [peopleCount, setPeopleCount] = useState(1);
   const [hasMedicalEmergency, setHasMedicalEmergency] = useState(false);
@@ -57,6 +58,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
   ];
 
   const handleResetForm = () => {
+    setTitle("");
     setDescription("");
     setVoiceTranscript("");
     setVoiceAudioUrl(null);
@@ -81,8 +83,12 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         .filter(Boolean)
         .join("\n\n");
 
+      const categoryLabel = categories.find((c) => c.id === category)?.label || category;
+      const defaultAutoTitle = `${categoryLabel} Emergency at ${location.address || "Disaster Zone"}`;
+      const finalTitle = title.trim() || defaultAutoTitle;
+
       const result = await submitDistressReport({
-        title: `${category.toUpperCase().replace("_", " ")} Emergency: ${location.address}`,
+        title: finalTitle,
         category,
         peopleCount: Number(peopleCount),
         hasMedicalEmergency,
@@ -107,6 +113,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
 
       setSubmittedReceipt({
         incidentId: incidentIdFormatted,
+        title: finalTitle,
         category: currentCategoryLabel,
         peopleCount,
         hasMedicalEmergency,
@@ -156,7 +163,14 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
 
         {/* Structured Summary Rows */}
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-left divide-y divide-slate-200 space-y-2">
-          <div className="flex items-center justify-between pb-2 text-xs">
+          <div className="flex items-start justify-between pb-2 text-xs gap-3">
+            <span className="text-slate-600 font-medium shrink-0">{t.titleLabel || "Incident Title"}:</span>
+            <span className="font-bold text-slate-900 text-right truncate max-w-[220px]">
+              {submittedReceipt.title}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between py-2 text-xs">
             <span className="text-slate-600 font-medium">{t.categorySummary || "Incident Type"}:</span>
             <span className="font-bold text-slate-900">{submittedReceipt.category}</span>
           </div>
@@ -269,7 +283,45 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         </div>
       </div>
 
-      {/* 2. Photo / Camera */}
+      {/* 2. Incident Title / Headline (User Given) */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-bold text-slate-700 uppercase tracking-wide flex items-center gap-1.5">
+            <span>{t.titleLabel || "Incident Title / Emergency Headline"}</span>
+            <span className="text-blue-600 font-semibold lowercase text-[10px] bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">
+              {t.customTitleHelp || "user specified"}
+            </span>
+          </label>
+          <span className="text-[11px] text-slate-400 font-mono">
+            {title.length}/100
+          </span>
+        </div>
+        <input
+          type="text"
+          maxLength={100}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={
+            category === "flood"
+              ? "E.g., Senior Care Home Ground Floor Inundated - Urgent Evacuation Needed"
+              : category === "trapped"
+              ? "E.g., 6 Family Members Stranded on 2nd Floor Roof Terrace"
+              : category === "medical"
+              ? "E.g., Cardiac Patient in Flooded House Needing Immediate Ambulance"
+              : category === "fire"
+              ? "E.g., High-Voltage Transformer Fire Sparking Near Flooded Street"
+              : category === "bridge"
+              ? "E.g., Arterial Canal Overpass Fracture Blocking Ambulance Route"
+              : "E.g., Urgent Distress Headline"
+          }
+          className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2.5 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors shadow-xs"
+        />
+        <p className="text-[11px] text-slate-500">
+          {t.titleHint || "Provide a clear headline. Rescue teams and dispatchers see this title first on the live incident board."}
+        </p>
+      </div>
+
+      {/* 3. Photo / Camera */}
       <div className="space-y-1.5">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
           {t.photoLabel || "Photo / Camera"}
@@ -284,7 +336,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         />
       </div>
 
-      {/* 3. Voice Report */}
+      {/* 4. Voice Report */}
       <div className="space-y-1.5">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
           {t.voiceLabel || "Voice Report"}
@@ -300,7 +352,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         />
       </div>
 
-      {/* 4. Text Description */}
+      {/* 5. Text Description */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
@@ -320,7 +372,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         />
       </div>
 
-      {/* 5. People Affected */}
+      {/* 6. People Affected */}
       <div className="bg-white border border-slate-200 rounded-lg p-3.5 flex items-center justify-between gap-4">
         <div>
           <label className="text-xs font-bold text-slate-900 block">
@@ -350,7 +402,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         </div>
       </div>
 
-      {/* 6. Medical Emergency */}
+      {/* 7. Medical Emergency */}
       <div className="bg-white border border-slate-200 rounded-lg p-3.5 space-y-2">
         <label className="flex items-start gap-2.5 cursor-pointer">
           <input
@@ -380,7 +432,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         )}
       </div>
 
-      {/* 7. Current Location */}
+      {/* 8. Current Location */}
       <div className="space-y-1.5">
         <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">
           {t.locationLabel || "Current Location"}
@@ -388,7 +440,7 @@ export const EmergencyReportForm = ({ onSubmitted }) => {
         <LocationPicker location={location} setLocation={setLocation} />
       </div>
 
-      {/* 8. Submit Report Button */}
+      {/* 9. Submit Report Button */}
       <button
         type="submit"
         disabled={isSubmitting}
